@@ -21,7 +21,7 @@ Git Bisect bakal **otomatis nyempiting** pencariannya dengan binary search — j
 | 1000 commit | 1000 langkah | ~10 langkah |
 | 1.000.000 commit | 1.000.000 langkah | ~20 langkah |
 
-> 💡 Git Bisect pake **logaritma basis 2** — semakin banyak commit, semakin besar keuntungannya!
+ 💡 Git Bisect pake **logaritma basis 2** — semakin banyak commit, semakin besar keuntungannya!
 
 ---
 

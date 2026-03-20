@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import { c } from '../utils/theme.js';
-import { SERVER_URL, getConfig } from '../utils/config.js';
+import { SERVER_URL, getConfigAsync } from '../utils/config.js';
 
 export async function pullFiles(args) {
-    const config = getConfig();
+    const config = getConfigAsync();
     if (!config || !config.token) {
         console.log(`${c.red}❌ Error: Anda belum login.${c.reset}`); process.exit(1);
     }

@@ -1,9 +1,9 @@
 import { c } from '../utils/theme.js';
-import { SERVER_URL, getConfig } from '../utils/config.js';
+import { SERVER_URL, getConfigAsync } from '../utils/config.js';
 import { askQuestion } from '../utils/prompt.js';
 
 export async function publishFile(slug) {
-    const config = getConfig();
+    const config = getConfigAsync();
     if (!config || !config.token) {
         console.log(`${c.red}❌ Error: Anda belum login. Gunakan perintah: ${c.yellow}ntc login${c.reset}`);
         process.exit(1);

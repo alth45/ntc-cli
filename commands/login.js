@@ -1,6 +1,6 @@
 import { c } from '../utils/theme.js';
 import { SERVER_URL, saveConfig } from '../utils/config.js';
-import { askQuestion, askPassword } from '../utils/prompt.js';
+import { askQuestion, askPassword } from '../utils/prompt.js'; // ← tambah askPassword
 
 export async function loginTerminal() {
     console.log(`${c.cyan}${c.bright}=========================================${c.reset}`);
@@ -8,9 +8,7 @@ export async function loginTerminal() {
     console.log(`${c.cyan}${c.bright}=========================================${c.reset}\n`);
 
     const email = await askQuestion(`${c.gray}✉️  Email    : ${c.reset}`);
-    // const password = await askQuestion(`${c.gray}🔑 Password : ${c.reset}`);
     const password = await askPassword(`${c.gray}🔑 Password : ${c.reset}`); // ← ganti ke askPassword
-
 
     console.log(`\n${c.yellow}⏳ Mengautentikasi ke sistem pusat...${c.reset}`);
 
@@ -24,10 +22,9 @@ export async function loginTerminal() {
         const result = await response.json();
 
         if (response.ok) {
-            const config = { token: result.token, email: email, username: result.username };
-            saveConfig(config); // Pakai fungsi dari utils/config.js
-            console.log(`\n${c.green}${c.bright}✅ AKSES DIBERIKAN!${c.reset} ${c.green}Selamat datang kembali, ${result.username}.${c.reset}`);
-            console.log(`${c.gray}Sistem siap menerima operasi push.${c.reset}`);
+            await saveConfig({ token: result.token, email, username: result.username });
+            console.log(`\n${c.green}${c.bright}✅ AKSES DIBERIKAN!${c.reset} ${c.green}Selamat datang, ${result.username}.${c.reset}`);
+            console.log(`${c.gray}Token tersimpan di OS keychain.${c.reset}`);
         } else {
             console.log(`\n${c.red}${c.bright}❌ [AKSES DITOLAK]${c.reset} ${c.red}${result.message}${c.reset}`);
         }
