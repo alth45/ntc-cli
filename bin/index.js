@@ -36,7 +36,7 @@ switch (command) {
         break;
     case 'drop': // <--- TAMBAHAN BARU
         // args isinya bisa nama file atau 'all'
-        dropFile(args.slice(1));
+        dropFile(args[1]);
         break;
     case 'delete':
     case 'pull':
