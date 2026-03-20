@@ -17,7 +17,7 @@ export const SERVER_URL = 'https://note-clone-one.vercel.app';
 export function getConfig() {
     // 1. Cek keberadaan file dulu
     if (!fs.existsSync(CONFIG_PATH)) {
-        logger.warn(`Config file ga ketemu di: ${CONFIG_PATH}. Balikin null.`);
+        log.warn(`Config file ga ketemu di: ${CONFIG_PATH}. Balikin null.`);
         return null;
     }
 
@@ -27,7 +27,7 @@ export function getConfig() {
 
         // 3. Cek kalau filenya kosong biar JSON.parse ga teriak
         if (!rawData.trim()) {
-            logger.warn("File config ada, tapi isinya kosong melompong.");
+            log.warn("File config ada, tapi isinya kosong melompong.");
             return null;
         }
 
@@ -36,7 +36,7 @@ export function getConfig() {
 
     } catch (error) {
         // Tangkep error kalau JSON rusak atau file ga bisa diakses (permission issue)
-        logger.error(`Amsyong! Gagal load config di ${CONFIG_PATH}`, error);
+        log.error(`Amsyong! Gagal load config di ${CONFIG_PATH}`, error);
 
         // Tetap balikin null supaya app ga langsung mati
         return null;
