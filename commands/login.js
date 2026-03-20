@@ -1,6 +1,6 @@
 import { c } from '../utils/theme.js';
 import { SERVER_URL, saveConfig } from '../utils/config.js';
-import { askQuestion } from '../utils/prompt.js';
+import { askQuestion, askPassword } from '../utils/prompt.js';
 
 export async function loginTerminal() {
     console.log(`${c.cyan}${c.bright}=========================================${c.reset}`);
@@ -8,7 +8,9 @@ export async function loginTerminal() {
     console.log(`${c.cyan}${c.bright}=========================================${c.reset}\n`);
 
     const email = await askQuestion(`${c.gray}✉️  Email    : ${c.reset}`);
-    const password = await askQuestion(`${c.gray}🔑 Password : ${c.reset}`);
+    // const password = await askQuestion(`${c.gray}🔑 Password : ${c.reset}`);
+    const password = await askPassword(`${c.gray}🔑 Password : ${c.reset}`); // ← ganti ke askPassword
+
 
     console.log(`\n${c.yellow}⏳ Mengautentikasi ke sistem pusat...${c.reset}`);
 
