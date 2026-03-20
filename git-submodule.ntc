@@ -1,0 +1,313 @@
+# 🚀 Belajar GitHub - Sesi 4: Git Submodules
+
+> Cara nyimpen dan manage repo lain di dalam repo lo
+
+
+## 1. Apa itu Git Submodules
+
+**Git Submodules** = cara nyimpen repo lain di dalam repo lo sebagai dependency
+
+### Struktur folder:
+```
+learn-git/                  ← repo utama
+├── .github/
+├── public/
+├── library/                ← ini submodule (repo my-library)
+│   └── library.js
+├── .gitmodules             ← file config submodule (auto-generated)
+├── math.js
+└── math.test.js
+```
+
+### File `.gitmodules`:
+File ini otomatis dibuat saat lo tambahin submodule pertama kali. Isinya info tentang semua submodule di repo lo:
+
+```
+[submodule "library"]
+    path = library
+    url = https://github.com/alth45/my-library.git
+```
+
+### Konsep penting — Submodule nunjuk ke commit tertentu:
+```
+my-library repo:  A → B → C → D (terbaru)
+                            ↑
+                  learn-git nunjuk ke sini (commit C)
+```
+
+> ⚠️ Submodule gak otomatis ikut update kalau repo library nya di-update!
+> Harus manual jalanin `git submodule update --remote`
+
+### Bedanya sama copy-paste biasa:
+| | Copy-paste | Submodule |
+|---|---|---|
+| **Update** | Manual, harus copy ulang | Tinggal `git submodule update` |
+| **Tracking** | Gak ada history | Nunjuk ke commit tertentu |
+| **Kolaborasi** | Susah sync antar developer | Semua developer pake versi yang sama |
+| **Ukuran repo** | Kode dobel di semua repo | Cukup referensi ke repo lain |
+
+---
+
+## 2. Kapan Dipake
+
+- Lo pake **library/tools dari repo lain** yang sering di-update
+- Lo mau **share kode yang sama** di beberapa project sekaligus
+- Lo kerja di **project besar** yang dipecah jadi beberapa repo
+- Lo mau **track versi spesifik** dari dependency lo
+
+### Contoh kasus nyata:
+```
+company-frontend/
+├── src/
+└── design-system/     ← submodule dari repo design-system perusahaan
+
+company-backend/
+├── src/
+└── shared-utils/      ← submodule dari repo shared-utils perusahaan
+```
+
+Jadi kalau `design-system` di-update, semua repo yang pake bisa update serentak!
+
+---
+
+## 3. Tambahin Submodule
+
+### Step 1 — Siapkan repo library dulu:
+```bash
+# Clone repo library
+git clone https://github.com/username/my-library.git
+cd my-library
+
+# Tambahin file
+echo "function halo() { return 'Halo dari library!'; }" > library.js
+git add .
+git commit -m "nambahin fungsi halo"
+git push
+```
+
+### Step 2 — Tambahin sebagai submodule di repo utama:
+```bash
+# Masuk ke repo utama
+cd ../learn-git
+
+# Tambahin submodule
+git submodule add https://github.com/username/my-library.git library
+```
+
+> Format: `git submodule add <url-repo> <nama-folder>`
+
+### Step 3 — Cek hasilnya:
+```bash
+# Cek folder library udah ada
+ls
+
+# Cek file .gitmodules yang otomatis dibuat
+cat .gitmodules
+
+# Cek status submodule
+git submodule status
+```
+
+### Step 4 — Push ke GitHub:
+```bash
+git add .
+git commit -m "nambahin submodule my-library"
+git push
+```
+
+### Tampilan di GitHub setelah push:
+Di repo lo bakal muncul folder dengan tanda khusus:
+```
+📁 library @ a1b2c3d
+```
+Tanda `@` + commit hash = folder itu adalah submodule yang nunjuk ke commit tertentu!
+
+---
+
+## 4. Update Submodule
+
+### Skenario — repo library di-update:
+```bash
+# 1. Masuk ke repo library dan tambahin perubahan
+cd ../my-library
+notepad library.js
+# edit file, tambahin fungsi baru
+
+git add .
+git commit -m "nambahin fungsi baru"
+git push
+
+# 2. Balik ke repo utama
+cd ../learn-git
+
+# 3. Cek status submodule
+git submodule status
+# output: -85a9ed6... library
+# tanda '-' artinya submodule belum di-update
+
+# 4. Update submodule ke versi terbaru
+git submodule update --remote
+
+# 5. Cek isi folder library — perubahan udah masuk!
+cat library/library.js
+
+# 6. Commit update submodule
+git add .
+git commit -m "update submodule my-library ke versi terbaru"
+git push
+```
+
+### Arti tanda di `git submodule status`:
+| Tanda | Arti |
+|---|---|
+| ` ` (kosong) | Submodule up to date |
+| `-` | Submodule belum di-init atau ada update baru |
+| `+` | Submodule udah di-checkout tapi beda dari yang di-commit |
+| `U` | Submodule ada merge conflict |
+
+---
+
+## 5. Clone Repo yang Punya Submodule
+
+> ⚠️ Kalau lo clone repo yang punya submodule, submodule nya **TIDAK** otomatis ikut ter-clone!
+
+### Cara clone + submodule sekaligus:
+```bash
+git clone --recurse-submodules https://github.com/username/learn-git.git
+```
+
+### Kalau udah terlanjur clone tanpa submodule:
+```bash
+# Init dulu
+git submodule init
+
+# Baru update/download isi submodule nya
+git submodule update
+
+# Atau bisa digabung jadi satu perintah
+git submodule update --init
+```
+
+### Kalau ada submodule di dalam submodule (nested):
+```bash
+git submodule update --init --recursive
+```
+
+---
+
+## 6. Bug yang Dihadapi & Cara Resolvenya
+
+### 🐛 Bug 1: fatal - no submodule mapping found
+
+**Pesan error:**
+```
+fatal: no submodule mapping found in .gitmodules for path 'my-library'
+```
+
+**Penyebab:**
+Ada sisa folder submodule lama yang masih ke-track oleh Git tapi udah dihapus dari `.gitmodules`
+
+**Solusi:**
+```bash
+# Hapus folder yang nyangkut dari Git tracking
+git rm -r --cached my-library
+
+# Cek status submodule lagi
+git submodule status
+```
+
+---
+
+### 🐛 Bug 2: Submodule folder kosong setelah clone
+
+**Masalah:**
+```
+Abis clone repo, folder library/ ada tapi isinya kosong
+```
+
+**Penyebab:**
+Clone tanpa flag `--recurse-submodules`
+
+**Solusi:**
+```bash
+git submodule update --init
+```
+
+---
+
+### 🐛 Bug 3: Submodule tidak ikut update otomatis
+
+**Masalah:**
+```
+Repo library udah di-update tapi isi folder library/ di repo utama masih lama
+```
+
+**Penyebab:**
+Submodule nunjuk ke commit tertentu, bukan ke branch terbaru — harus update manual
+
+**Solusi:**
+```bash
+git submodule update --remote
+git add .
+git commit -m "update submodule ke versi terbaru"
+git push
+```
+
+---
+
+## 7. Cheat Sheet Submodule
+
+```bash
+# Tambahin submodule baru
+git submodule add <url> <folder>
+
+# Cek status semua submodule
+git submodule status
+
+# Update semua submodule ke versi terbaru
+git submodule update --remote
+
+# Init submodule (setelah clone)
+git submodule init
+
+# Init + update sekaligus
+git submodule update --init
+
+# Init + update semua termasuk nested submodule
+git submodule update --init --recursive
+
+# Clone repo beserta semua submodule nya
+git clone --recurse-submodules <url>
+
+# Hapus submodule dari tracking (kalau ada masalah)
+git rm -r --cached <nama-folder>
+```
+
+### Ringkasan alur lengkap:
+```
+Bikin repo library
+        ↓
+git submodule add <url> <folder>   → tambahin ke repo utama
+        ↓
+git add + commit + push            → simpen ke GitHub
+        ↓
+Library di-update
+        ↓
+git submodule update --remote      → ambil versi terbaru
+        ↓
+git add + commit + push            → simpen update ke GitHub
+```
+
+---
+
+## 💡 Tips & Best Practices
+
+1. **Selalu `--recurse-submodules`** saat clone repo yang punya submodule
+2. **Rutin update submodule** → jalanin `git submodule update --remote` sebelum mulai kerja
+3. **Commit setelah update** → jangan lupa commit perubahan pointer submodule ke GitHub
+4. **Jangan edit langsung di folder submodule** → edit di repo aslinya, terus update dari sana
+5. **Dokumentasiin submodule** → tambahin info di README repo utama tentang submodule yang dipake
+
+---
+
+> 💪 **Submodules bikin project lo lebih modular dan mudah di-maintain!**

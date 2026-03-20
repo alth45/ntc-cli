@@ -1,0 +1,384 @@
+# 🚀 Belajar GitHub - Sesi 4: Git Hooks
+
+> Script yang otomatis jalan sebelum atau sesudah perintah Git tertentu
+
+
+
+## 1. Apa itu Git Hooks
+
+**Git Hooks** = script yang otomatis jalan **sebelum atau sesudah** lo lakuin perintah Git tertentu
+
+### Cara kerjanya:
+```
+git commit → Pre-commit hook jalan dulu → Kalau lolos → Commit tersimpan
+git push   → Pre-push hook jalan dulu   → Kalau lolos → Push ke GitHub
+```
+
+### Kapan dipake?
+- **Validasi kode** sebelum commit — pastiin gak ada syntax error
+- **Jalanin test** sebelum commit — pastiin semua test pass dulu
+- **Format kode** otomatis sebelum commit
+- **Cegah push** langsung ke branch `main`
+- **Validasi pesan commit** — pastiin format pesan sesuai standar tim
+
+### Bedanya Git Hooks vs GitHub Actions:
+| | Git Hooks | GitHub Actions |
+|---|---|---|
+| **Jalan di** | Komputer lo sendiri | Server GitHub |
+| **Kapan** | Sebelum/sesudah perintah Git | Setelah push ke GitHub |
+| **Bisa di-skip** | Ya, pake `--no-verify` | Tidak bisa di-skip |
+| **Share ke tim** | Tidak otomatis (butuh Husky) | Otomatis (ada di repo) |
+| **Cocok untuk** | Validasi lokal, cegah commit buruk | CI/CD, testing, deploy |
+
+---
+
+## 2. Lokasi Hooks
+
+Semua hooks disimpen di folder `.git/hooks/` di dalam repo lo:
+
+```bash
+# Cek semua hooks yang tersedia
+ls .git/hooks/
+```
+
+### File `.sample` yang ada by default:
+```
+applypatch-msg.sample
+commit-msg.sample
+fsmonitor-watchman.sample
+post-update.sample
+pre-applypatch.sample
+pre-commit.sample         ← contoh pre-commit hook
+pre-merge-commit.sample
+pre-push.sample           ← contoh pre-push hook
+pre-rebase.sample
+pre-receive.sample
+prepare-commit-msg.sample
+push-to-checkout.sample
+update.sample
+```
+
+> 💡 File `.sample` = belum aktif! Buat ngaktifin, bikin file baru **tanpa** `.sample` di namanya!
+
+### Cara aktifin hook:
+```bash
+# Bikin file hook baru (tanpa .sample)
+notepad .git/hooks/pre-commit
+```
+
+---
+
+## 3. Pre-commit Hook
+
+> Jalan sebelum commit disimpan — cocok buat validasi & testing
+
+### File `.git/hooks/pre-commit`:
+```bash
+#!/bin/sh
+echo "================================================"
+echo "Pre-commit hook jalan!"
+echo "Ngecek kode sebelum commit..."
+echo "================================================"
+
+# Jalanin test dulu sebelum commit
+npx jest
+
+# Kalau test gagal, commit dibatalin otomatis!
+if [ $? -ne 0 ]; then
+  echo "❌ Test gagal! Commit dibatalin!"
+  exit 1
+fi
+
+echo "✅ Semua test passed! Commit dilanjutkan..."
+```
+
+### Cara kerjanya:
+```
+git commit -m "pesan"
+        ↓
+Pre-commit hook jalan
+        ↓
+npx jest
+        ↓
+Test PASS → ✅ Commit tersimpan
+Test FAIL → ❌ Commit dibatalin otomatis
+```
+
+### Contoh output kalau test PASS:
+```
+================================================
+Pre-commit hook jalan!
+Ngecek kode sebelum commit...
+================================================
+PASS ./math.test.js
+  ✓ tambah 2 + 3 harusnya 5 (10 ms)
+  ✓ kurang 5 - 3 harusnya 2 (2 ms)
+  ✓ kali 3 x 4 harusnya 12 (1 ms)
+Tests: 3 passed, 3 total
+✅ Semua test passed! Commit dilanjutkan...
+[main 0809786] pesan commit
+```
+
+### Contoh output kalau test FAIL:
+```
+================================================
+Pre-commit hook jalan!
+Ngecek kode sebelum commit...
+================================================
+FAIL ./math.test.js
+  ✕ tambah 2 + 3 harusnya 5
+  Expected: 5
+  Received: -1
+Tests: 1 failed, 2 passed, 3 total
+❌ Test gagal! Commit dibatalin!
+```
+
+---
+
+## 4. Pre-push Hook
+
+> Jalan sebelum push ke GitHub — cocok buat cegah push langsung ke main
+
+### File `.git/hooks/pre-push`:
+```bash
+#!/bin/sh
+echo "================================================"
+echo "Pre-push hook jalan!"
+echo "Mastiin lo gak push langsung ke main..."
+echo "================================================"
+
+# Ambil nama branch sekarang
+branch=$(git symbolic-ref HEAD | sed 's!refs/heads/!!')
+
+# Cek kalau lo push ke main
+if [ "$branch" = "main" ]; then
+  echo "❌ Dilarang push langsung ke main!"
+  echo "💡 Bikin branch baru dan PR dulu ya!"
+  exit 1
+fi
+
+echo "✅ Aman! Push ke branch $branch dilanjutkan..."
+```
+
+### Cara kerjanya:
+```
+git push origin main
+        ↓
+Pre-push hook jalan
+        ↓
+Cek branch sekarang
+        ↓
+Branch main  → ❌ Push dibatalin
+Branch lain  → ✅ Push dilanjutkan
+```
+
+### Contoh output kalau push ke main:
+```
+================================================
+Pre-push hook jalan!
+Mastiin lo gak push langsung ke main...
+================================================
+❌ Dilarang push langsung ke main!
+💡 Bikin branch baru dan PR dulu ya!
+error: failed to push some refs to 'https://github.com/...'
+```
+
+### Contoh output kalau push ke branch lain:
+```
+================================================
+Pre-push hook jalan!
+Mastiin lo gak push langsung ke main...
+================================================
+✅ Aman! Push ke branch fitur-baru dilanjutkan...
+```
+
+---
+
+## 5. Skip Hooks
+
+> Kadang lo perlu bypass hooks dalam kondisi urgent
+
+### Skip saat commit:
+```bash
+git commit --no-verify -m "pesan commit"
+# atau versi pendek
+git commit -n -m "pesan commit"
+```
+
+### Skip saat push:
+```bash
+git push --no-verify
+git push origin main --no-verify
+```
+
+> ⚠️ Gunakan `--no-verify` dengan bijak! Jangan dijadiin kebiasaan karena hooks ada tujuannya.
+
+---
+
+## 6. Bug yang Dihadapi & Cara Resolvenya
+
+### 🐛 Bug 1: jest not recognized
+
+**Pesan error:**
+```
+'jest' is not recognized as an internal or external command,
+operable program or batch file.
+❌ Test gagal! Commit dibatalin!
+```
+
+**Penyebab:**
+Di Windows, perintah `jest` langsung gak dikenali karena path nya beda
+
+**Solusi:**
+Ganti `npm test` atau `jest` dengan `npx jest` di hook:
+```bash
+# ❌ Jangan
+npm test
+jest
+
+# ✅ Pake ini
+npx jest
+```
+
+---
+
+### 🐛 Bug 2: Hook tidak jalan sama sekali
+
+**Masalah:**
+Udah bikin file hook tapi gak jalan saat commit/push
+
+**Penyebab:**
+Di Linux/Mac, file hook harus punya permission executable. Di Windows biasanya gak masalah tapi kalau bermasalah coba ini:
+
+**Solusi (Linux/Mac):**
+```bash
+chmod +x .git/hooks/pre-commit
+chmod +x .git/hooks/pre-push
+```
+
+---
+
+### 🐛 Bug 3: Hooks tidak ikut ke tim
+
+**Masalah:**
+Hooks yang lo bikin gak ikut ke-push ke GitHub, jadi teman lo gak punya hooks yang sama
+
+**Penyebab:**
+Folder `.git/` tidak di-track oleh Git — ini by design!
+
+**Solusi:**
+Pake **Husky** — library yang bikin hooks bisa di-share ke seluruh tim via `package.json`:
+```bash
+# Install Husky
+npm install husky --save-dev
+
+# Init Husky
+npx husky init
+```
+
+Dengan Husky, hooks disimpen di folder `.husky/` yang ikut ke-push ke GitHub!
+
+---
+
+## 7. Hooks Lain yang Sering Dipake
+
+| Hook | Kapan Jalan | Kegunaan |
+|---|---|---|
+| `pre-commit` | Sebelum commit | Jalanin test, format kode |
+| `commit-msg` | Saat nulis pesan commit | Validasi format pesan commit |
+| `pre-push` | Sebelum push | Cegah push ke main, jalanin test |
+| `post-commit` | Setelah commit | Notifikasi, logging |
+| `post-merge` | Setelah merge | Auto install dependencies |
+| `pre-rebase` | Sebelum rebase | Cegah rebase di kondisi tertentu |
+
+### Contoh `commit-msg` hook — validasi format pesan:
+```bash
+#!/bin/sh
+# Pastiin pesan commit minimal 10 karakter
+commit_msg=$(cat "$1")
+min_length=10
+
+if [ ${#commit_msg} -lt $min_length ]; then
+  echo "❌ Pesan commit terlalu pendek!"
+  echo "💡 Minimal $min_length karakter ya!"
+  exit 1
+fi
+
+echo "✅ Format pesan commit oke!"
+```
+
+### Contoh `post-merge` hook — auto install dependencies:
+```bash
+#!/bin/sh
+# Auto install kalau package.json berubah
+changed_files=$(git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD)
+
+if echo "$changed_files" | grep -q "package.json"; then
+  echo "📦 package.json berubah, auto install dependencies..."
+  npm install
+fi
+```
+
+---
+
+## 8. Cheat Sheet Git Hooks
+
+```bash
+# Lokasi semua hooks
+.git/hooks/
+
+# Cek semua hooks yang tersedia
+ls .git/hooks/
+
+# Bikin pre-commit hook
+notepad .git/hooks/pre-commit
+
+# Bikin pre-push hook
+notepad .git/hooks/pre-push
+
+# Skip hooks saat commit
+git commit --no-verify -m "pesan"
+
+# Skip hooks saat push
+git push --no-verify
+
+# Kasih permission executable (Linux/Mac)
+chmod +x .git/hooks/pre-commit
+chmod +x .git/hooks/pre-push
+```
+
+### Alur lengkap dengan hooks:
+```
+Edit kode
+    ↓
+git add .
+    ↓
+git commit -m "pesan"
+    ↓
+Pre-commit hook jalan
+    ↓
+Test PASS → Commit tersimpan
+Test FAIL → Commit dibatalin ❌
+    ↓
+git push origin branch-name
+    ↓
+Pre-push hook jalan
+    ↓
+Branch main  → Push dibatalin ❌
+Branch lain  → Push dilanjutkan ✅
+```
+
+---
+
+## 💡 Tips & Best Practices
+
+1. **Pake `npx`** → di Windows, selalu pake `npx jest` bukan `jest` langsung di hooks
+2. **Jangan abuse `--no-verify`** → hooks ada tujuannya, skip hanya kalau beneran urgent
+3. **Share hooks pake Husky** → biar seluruh tim punya hooks yang sama
+4. **Keep hooks cepet** → hooks yang kelamaan bikin developer males commit
+5. **Dokumentasiin hooks** → tambahin penjelasan di README tentang hooks yang dipake tim
+6. **Kombinasiin sama GitHub Actions** → hooks untuk validasi lokal, GitHub Actions untuk CI/CD di server
+
+---
+
+> 💪 **Git Hooks bikin lo jadi developer yang lebih disiplin — kode buruk gak akan bisa masuk ke repo!**

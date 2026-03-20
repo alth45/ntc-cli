@@ -1,0 +1,405 @@
+# 🚀 Belajar GitHub - Sesi 5: Git Rebase Interactive
+
+> Cara edit, gabungin, dan hapus commit dengan lebih powerful
+
+
+
+## 1. Apa itu Git Rebase Interactive
+
+**Git Rebase Interactive** = versi rebase yang bisa lo kontrol satu per satu — bisa edit, gabungin, ganti pesan, atau hapus commit!
+
+### Kapan dipake?
+- **Squash** → gabungin beberapa commit `wip` jadi satu commit yang rapi
+- **Reword** → ganti pesan commit yang salah ketik atau kurang deskriptif
+- **Drop** → hapus commit yang gak diperlukan
+- **Reorder** → ubah urutan commit
+- **Edit** → pause rebase buat edit isi commit
+
+### Kenapa penting?
+Di dunia nyata, lo sering nulis banyak commit kecil waktu development:
+```
+wip: coba-coba
+wip: fix dikit
+wip: fix lagi
+wip: akhirnya bener
+```
+
+Sebelum PR, lo mau rapiin jadi:
+```
+feat: implementasi fitur login
+```
+
+Nah git rebase interactive solusinya! 🔥
+
+---
+
+## 2. Cara Masuk Interactive Rebase
+
+```bash
+# Rebase N commit terakhir
+git rebase -i HEAD~N
+
+# Contoh: rebase 3 commit terakhir
+git rebase -i HEAD~3
+```
+
+### Tampilan VIM yang muncul:
+```
+pick 1dc9203 wip: perubahan 1
+pick 4ebd788 wip: perubahan 2
+pick 2d43085 wip: perubahan 3
+
+# Rebase 9d7196e..2d43085 onto 9d7196e (3 commands)
+#
+# Commands:
+# p, pick   = use commit
+# r, reword = use commit, but edit the commit message
+# e, edit   = use commit, but stop for amending
+# s, squash = use commit, but meld into previous commit
+# f, fixup  = like "squash", but discard this commit's log message
+# d, drop   = remove commit
+```
+
+### Cara edit di VIM:
+```
+1. Tekan i          → masuk mode INSERT
+2. Edit isi file
+3. Tekan Escape     → keluar mode INSERT
+4. Ketik :wq        → save dan keluar
+5. Tekan Enter
+```
+
+### Semua perintah yang tersedia:
+| Perintah | Singkatan | Fungsi |
+|---|---|---|
+| `pick` | `p` | Pake commit apa adanya (default) |
+| `reword` | `r` | Pake commit tapi ganti pesan nya |
+| `squash` | `s` | Gabungin ke commit sebelumnya |
+| `fixup` | `f` | Kayak squash tapi buang pesan commit nya |
+| `drop` | `d` | Hapus commit ini |
+| `edit` | `e` | Pause rebase buat edit commit |
+
+---
+
+## 3. Squash - Gabungin Commit
+
+> Gabungin beberapa commit jadi satu commit yang rapi
+
+### Setup:
+```bash
+echo "perubahan 1" >> README.md
+git add .
+git commit -m "wip: perubahan 1" --no-verify
+
+echo "perubahan 2" >> README.md
+git add .
+git commit -m "wip: perubahan 2" --no-verify
+
+echo "perubahan 3" >> README.md
+git add .
+git commit -m "wip: perubahan 3" --no-verify
+```
+
+### Log sebelum squash:
+```
+2d43085 wip: perubahan 3
+4ebd788 wip: perubahan 2
+1dc9203 wip: perubahan 1
+```
+
+### Jalanin interactive rebase:
+```bash
+git rebase -i HEAD~3
+```
+
+### Edit di VIM — ubah pick jadi squash:
+```
+pick 1dc9203 wip: perubahan 1
+squash 4ebd788 wip: perubahan 2
+squash 2d43085 wip: perubahan 3
+```
+
+> 💡 Commit pertama tetap `pick` — commit ke-2 dan ke-3 di-`squash` ke commit pertama
+
+### VIM kedua muncul — tulis pesan commit baru:
+```
+feat: nambahin perubahan 1, 2, dan 3
+```
+
+### Log setelah squash:
+```
+a4f928d feat: nambahin perubahan 1, 2, dan 3
+```
+
+3 commit jadi 1! ✅
+
+### Kalau pesan commit nya masih salah, pake amend:
+```bash
+git commit --amend -m "feat: pesan yang bener" --no-verify
+```
+
+---
+
+## 4. Reword - Ganti Pesan Commit
+
+> Ganti pesan commit lama tanpa mengubah isi nya
+
+### Jalanin interactive rebase:
+```bash
+git rebase -i HEAD~3
+```
+
+### Edit di VIM — ubah pick jadi reword:
+```
+reword a4f928d feat: nambahin perubahan 1, 2, dan 3
+pick ...
+pick ...
+```
+
+### VIM kedua muncul — ganti pesan commit:
+```
+feat: squash 3 commit jadi 1
+```
+
+### Log setelah reword:
+```
+007ac65 feat: squash 3 commit jadi 1
+```
+
+Pesan commit berhasil diganti! ✅
+
+---
+
+## 5. Drop - Hapus Commit
+
+> Hapus commit yang gak diperlukan dari history
+
+### Setup:
+```bash
+echo "ini mau dihapus" >> README.md
+git add .
+git commit -m "commit sampah" --no-verify
+
+echo "ini mau dipertahanin" >> README.md
+git add .
+git commit -m "commit penting" --no-verify
+```
+
+### Log sebelum drop:
+```
+8e4eb7e commit penting
+bd2bc6e commit sampah
+```
+
+### Jalanin interactive rebase:
+```bash
+git rebase -i HEAD~2
+```
+
+### Edit di VIM — ubah pick jadi drop:
+```
+drop bd2bc6e commit sampah
+pick 8e4eb7e commit penting
+```
+
+### Log setelah drop:
+```
+1b2ce03 commit penting
+```
+
+"commit sampah" berhasil dihapus! ✅
+
+---
+
+## 6. Force Push setelah Rebase
+
+> Setelah rebase, history lokal beda sama GitHub — butuh force push
+
+### Kenapa perlu force push?
+Rebase **menulis ulang history** — commit hash berubah semua. GitHub nolak push biasa karena history nya dianggap konfllik.
+
+### Pesan error yang muncul:
+```
+! [rejected] main -> main (non-fast-forward)
+error: failed to push some refs
+hint: Updates were rejected because the tip of your current branch is behind
+```
+
+### Solusi — force push:
+```bash
+git push --force --no-verify
+# atau versi pendek
+git push -f --no-verify
+```
+
+### ⚠️ PERINGATAN KERAS:
+```
+✅ Force push BOLEH di branch pribadi yang belum dipake orang lain
+❌ Force push DILARANG di branch yang udah dipake tim
+   → Bisa ngerusak history semua orang di tim!
+```
+
+---
+
+## 7. Bug yang Dihadapi & Cara Resolvenya
+
+### 🐛 Bug 1: Conflict saat drop commit
+
+**Masalah:**
+```
+CONFLICT (content): Merge conflict in README.md
+error: could not apply 8e4eb7e... commit penting
+```
+
+**Penyebab:**
+Commit yang di-drop edit file yang sama dengan commit berikutnya — Git bingung cara apply perubahan tanpa commit yang di-drop
+
+**Solusi:**
+```bash
+# 1. Resolve conflict
+notepad README.md
+# hapus tanda <<<<<<, =======, >>>>>>>
+
+# 2. Add file
+git add README.md
+
+# 3. Lanjutin rebase
+git rebase --continue
+# kalau muncul VIM → Escape → :wq → Enter
+```
+
+---
+
+### 🐛 Bug 2: README encoding jadi aneh
+
+**Masalah:**
+```
+p e r u b a h a n   1
+
+p e r u b a h a n   2
+```
+
+**Penyebab:**
+`echo` di Windows PowerShell kadang nyimpen file dengan encoding UTF-16 yang bikin karakter jadi spasi-spasi
+
+**Solusi:**
+Buka file dan tulis ulang manual:
+```bash
+notepad README.md
+# hapus semua isi, tulis ulang yang bener
+# save as → pilih encoding UTF-8
+```
+
+> 💡 Untuk hindari masalah ini, selalu edit file pake notepad atau VS Code langsung, bukan pake `echo` di PowerShell
+
+---
+
+### 🐛 Bug 3: Squash pesan commit nya salah
+
+**Masalah:**
+```
+git log --oneline
+ff49a9b nambahin fitur 1   ← pesan nya bukan yang baru ditulis
+```
+
+**Penyebab:**
+Waktu VIM kedua muncul, pesan commit yang lama gak dihapus dengan bener
+
+**Solusi:**
+Pake `git commit --amend` buat ganti pesan:
+```bash
+git commit --amend -m "feat: pesan yang bener" --no-verify
+```
+
+---
+
+### 🐛 Bug 4: Push ditolak setelah rebase
+
+**Pesan error:**
+```
+! [rejected] main -> main (non-fast-forward)
+```
+
+**Penyebab:**
+Rebase mengubah commit hash — history lokal dan GitHub jadi beda
+
+**Solusi:**
+```bash
+git push --force --no-verify
+```
+
+> ⚠️ Hanya boleh di branch pribadi yang belum dipake orang lain!
+
+---
+
+## 8. Cheat Sheet Rebase Interactive
+
+```bash
+# Masuk interactive rebase N commit terakhir
+git rebase -i HEAD~N
+
+# Perintah di VIM:
+# pick    → pake commit apa adanya
+# reword  → ganti pesan commit
+# squash  → gabungin ke commit sebelumnya
+# fixup   → gabungin tapi buang pesan commit
+# drop    → hapus commit
+# edit    → pause buat edit commit
+
+# Navigasi VIM:
+# i       → masuk mode edit
+# Escape  → keluar mode edit
+# :wq     → save dan keluar
+# :q!     → keluar tanpa save
+
+# Lanjutin rebase setelah conflict
+git rebase --continue
+
+# Batalin rebase
+git rebase --abort
+
+# Ganti pesan commit terakhir
+git commit --amend -m "pesan baru" --no-verify
+
+# Force push setelah rebase
+git push --force --no-verify
+```
+
+### Perbandingan squash vs fixup:
+| | `squash` | `fixup` |
+|---|---|---|
+| **Pesan commit** | Minta nulis pesan baru | Buang pesan, pake pesan commit pertama |
+| **VIM kedua** | Muncul | Tidak muncul |
+| **Cocok untuk** | Mau tulis pesan baru | Mau buang commit kecil tanpa jejak |
+
+### Alur interactive rebase yang ideal:
+```
+Banyak commit wip selama development
+        ↓
+git rebase -i HEAD~N
+        ↓
+squash semua commit wip jadi satu
+        ↓
+Tulis pesan commit yang deskriptif
+        ↓
+git push --force (kalau branch pribadi)
+        ↓
+Bikin PR dengan history yang rapi ✅
+```
+
+---
+
+## 💡 Tips & Best Practices
+
+1. **Squash sebelum PR** → rapiin commit wip sebelum minta review
+2. **Jangan force push ke branch shared** → bisa ngerusak history tim
+3. **Ganti default editor dari VIM** → biar lebih nyaman:
+```bash
+git config --global core.editor "notepad"
+```
+4. **Gunakan fixup buat commit kecil** → kalau commit cuma fix typo, pake `fixup` bukan `squash`
+5. **Selalu cek log sebelum rebase** → pastiin tau commit mana yang mau diubah
+
+---
+
+> 💪 **Git Rebase Interactive bikin history repo lo bersih dan profesional — PR lo bakal lebih enak di-review tim!**

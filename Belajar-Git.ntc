@@ -1,0 +1,432 @@
+# 🚀 Belajar GitHub dari 0 - Recap Lengkap
+
+> Dokumentasi perjalanan belajar Git & GitHub dari dasar sampai GitHub Actions
+
+---
+
+## 📌 Daftar Isi
+1. [Git vs GitHub](#1-git-vs-github)
+2. [Install & Setup Git](#2-install--setup-git)
+3. [Bikin Repository](#3-bikin-repository)
+4. [Clone Repository](#4-clone-repository)
+5. [Siklus Kerja Git](#5-siklus-kerja-git)
+6. [Git Pull](#6-git-pull)
+7. [Branch](#7-branch)
+8. [Pull Request & Merge](#8-pull-request--merge)
+9. [gitignore](#9-gitignore)
+10. [Git Log](#10-git-log)
+11. [Git Stash](#11-git-stash)
+12. [Resolve Conflict](#12-resolve-conflict)
+13. [Fork](#13-fork)
+14. [Git Reset](#14-git-reset)
+15. [GitHub Actions](#15-github-actions)
+
+---
+
+## 1. Git vs GitHub
+
+| | Git | GitHub |
+|---|---|---|
+| **Apa itu** | Software di komputer | Website/cloud |
+| **Fungsi** | Nyimpen history perubahan kode | Tempat upload & kolaborasi kode |
+| **Analogi** | Buku catatan di meja | Google Drive |
+
+---
+
+## 2. Install & Setup Git
+
+**Cek versi Git:**
+```bash
+git --version
+```
+
+**Setup identitas:**
+```bash
+git config --global user.name "Nama Lo"
+git config --global user.email "email@lo.com"
+```
+
+**Cek konfigurasi:**
+```bash
+git config --list
+```
+
+---
+
+## 3. Bikin Repository
+
+1. Login ke **github.com**
+2. Klik **"+"** → **"New repository"**
+3. Isi nama repo, pilih **Public**, centang **"Add a README file"**
+4. Klik **"Create repository"**
+
+---
+
+## 4. Clone Repository
+
+**Clone repo dari GitHub ke komputer:**
+```bash
+git clone https://github.com/username/nama-repo.git
+```
+
+**Masuk ke folder:**
+```bash
+cd nama-repo
+```
+
+**Cek isi folder:**
+```bash
+ls
+```
+
+---
+
+## 5. Siklus Kerja Git
+
+> 3 perintah wajib yang dipake setiap hari!
+
+```
+Folder lo  →  Staging Area  →  Repository  →  GitHub
+           git add          git commit      git push
+```
+
+**Cek status:**
+```bash
+git status
+```
+
+**Add file ke staging:**
+```bash
+git add nama-file.txt
+# atau add semua file sekaligus:
+git add .
+```
+
+**Commit perubahan:**
+```bash
+git commit -m "pesan commit lo"
+```
+
+**Push ke GitHub:**
+```bash
+git push
+```
+
+---
+
+## 6. Git Pull
+
+> Kebalikan dari push — ngambil update dari GitHub ke komputer
+
+```bash
+git pull
+```
+
+**Alur komunikasi:**
+```
+Komputer lo  →  git push  →  GitHub
+Komputer lo  ←  git pull  ←  GitHub
+```
+
+---
+
+## 7. Branch
+
+> Cabang untuk ngerjain fitur baru tanpa ngerusak kode utama
+
+```
+main ──────────────────────────→ (kode utama/stabil)
+        ↘
+         fitur-baru ──────────→ (lo kerja di sini)
+```
+
+**Bikin branch baru:**
+```bash
+git branch nama-branch
+```
+
+**Pindah ke branch:**
+```bash
+git checkout nama-branch
+```
+
+**Bikin & langsung pindah (shortcut):**
+```bash
+git checkout -b nama-branch
+```
+
+**Cek posisi branch sekarang:**
+```bash
+git branch
+```
+
+**Push branch ke GitHub:**
+```bash
+git push origin nama-branch
+```
+
+---
+
+## 8. Pull Request & Merge
+
+**Pull Request (PR)** = cara minta perubahan di branch lo digabungin ke branch utama
+
+**Alurnya:**
+```
+Branch fitur-baru → Pull Request → Review → Merge ke main
+```
+
+**Setelah merge, balik ke main & update:**
+```bash
+git checkout main
+git pull
+```
+
+---
+
+## 9. .gitignore
+
+> File yang isinya daftar file/folder yang TIDAK mau di-upload ke GitHub
+
+**Contoh isi `.gitignore`:**
+```
+# File rahasia
+rahasia.txt
+.env
+config/secret.json
+
+# Folder dependencies
+node_modules/
+vendor/
+
+# File build
+dist/
+build/
+```
+
+**Bikin `.gitignore`:**
+```bash
+echo "nama-file.txt" > .gitignore
+```
+
+---
+
+## 10. Git Log
+
+> Ngeliat semua history commit
+
+**Log lengkap:**
+```bash
+git log
+```
+
+**Log ringkas (lebih enak dibaca):**
+```bash
+git log --oneline
+```
+
+**Contoh output:**
+```
+a1b2c3d nambahin gitignore
+z9y8x7w nambahin fitur baru
+x6w5v4u Initial commit
+```
+
+> 💡 Angka di depan (`a1b2c3d`) = **commit hash**, ID unik tiap commit
+
+---
+
+## 11. Git Stash
+
+> Nyimpen perubahan sementara tanpa harus commit
+
+**Kapan dipake:**
+- Lagi ngerjain sesuatu belum selesai
+- Tiba-tiba harus pindah branch buat fix bug urgent
+
+**Simpan sementara:**
+```bash
+git stash
+```
+
+**Ambil balik:**
+```bash
+git stash pop
+```
+
+**Alurnya:**
+```
+Kerja setengah jalan → git stash → pindah branch → fix bug → balik → git stash pop
+```
+
+---
+
+## 12. Resolve Conflict
+
+> Terjadi ketika 2 orang edit baris yang sama di file yang sama
+
+**Tampilan conflict di file:**
+```
+<<<<<<< HEAD
+perubahan dari komputer lo
+=======
+perubahan dari GitHub/orang lain
+>>>>>>> commit-hash
+```
+
+**Cara resolve:**
+1. Buka file yang conflict
+2. Hapus bagian yang tidak dipakai
+3. Hapus tanda `<<<<<<<`, `=======`, `>>>>>>>`
+4. Save file
+5. Add, commit, push
+
+```bash
+git add nama-file
+git commit -m "resolve conflict"
+git push
+```
+
+---
+
+## 13. Fork
+
+> Copy repo orang lain ke akun GitHub lo
+
+| | Clone | Fork |
+|---|---|---|
+| **Hasil** | Copy ke komputer | Copy ke akun GitHub lo |
+| **Tujuan** | Kerja di lokal | Modif repo orang lain |
+
+**Flow fork ke kontribusi:**
+```
+Repo orang lain → Fork → Repo lo di GitHub → Clone → Edit → Push → Pull Request
+```
+
+---
+
+## 14. Git Reset
+
+> Balik ke commit sebelumnya
+
+```bash
+# Balik commit tapi perubahan TETAP ADA di staging
+git reset --soft commit-hash
+
+# Balik commit dan perubahan HILANG semua
+git reset --hard commit-hash
+```
+
+| | `--soft` | `--hard` |
+|---|---|---|
+| **Commit** | Dibatalin | Dibatalin |
+| **Perubahan file** | Tetap ada | Hilang permanen |
+
+> ⚠️ Hati-hati pake `--hard` — perubahan hilang permanen!
+
+---
+
+## 15. GitHub Actions
+
+> Otomatisasi hal-hal yang biasa lo lakuin manual
+
+**Alurnya:**
+```
+Lo push code → GitHub Actions otomatis jalan → Testing/Build/Deploy
+```
+
+**Lokasi file:**
+```
+.github/workflows/nama-file.yml
+```
+
+### Struktur dasar:
+```yaml
+name: Nama Workflow
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:    # bisa dijalanin manual
+
+jobs:
+  nama-job:
+    runs-on: ubuntu-latest
+    env:
+      NAMA: "nilai"
+      API_KEY: ${{ secrets.API_KEY }}    # pake secrets buat data rahasia
+    steps:
+      - name: Nama Step
+        run: echo "perintah bash"        # jalanin perintah
+
+      - name: Pake Action orang lain
+        uses: actions/checkout@v3        # pake action dari marketplace
+        with:
+          node-version: '18'
+```
+
+### Konsep penting:
+
+| Konsep | Penjelasan |
+|---|---|
+| `on` | Trigger kapan workflow jalan |
+| `jobs` | Kumpulan pekerjaan (bisa paralel) |
+| `steps` | Langkah-langkah dalam 1 job (berurutan) |
+| `run` | Jalanin perintah bash |
+| `uses` | Pake Action buatan orang lain |
+| `env` | Environment variable |
+| `secrets` | Data rahasia (otomatis disensor di log) |
+
+### Perbedaan Steps vs Jobs:
+```
+Steps → jalan BERURUTAN dalam 1 job
+Jobs  → bisa jalan BERSAMAAN (paralel)
+```
+
+---
+
+## 🎯 Cheat Sheet Lengkap
+
+```bash
+# Setup
+git config --global user.name "Nama"
+git config --global user.email "email"
+
+# Mulai project
+git clone <url>
+git init
+
+# Siklus kerja harian
+git status
+git add .
+git commit -m "pesan"
+git push
+git pull
+
+# Branch
+git branch nama-branch
+git checkout nama-branch
+git checkout -b nama-branch     # bikin + pindah sekaligus
+git push origin nama-branch
+
+# History
+git log
+git log --oneline
+
+# Stash
+git stash
+git stash pop
+
+# Reset
+git reset --soft <hash>
+git reset --hard <hash>
+
+# Setelah merge PR
+git checkout main
+git pull
+```
+
+---
+
+> 💪 **Lo udah kuasain skill Git yang dipake developer profesional beneran!**

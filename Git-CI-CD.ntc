@@ -1,0 +1,282 @@
+# 🚀 Belajar GitHub - Sesi 2: GitHub Actions & CI/CD
+
+> Lanjutan dari sesi 1 — fokus ke otomasi workflow dengan GitHub Actions
+
+
+
+## 1. Auto Testing dengan Jest
+
+### Setup Project Node.js
+```bash
+npm init -y
+npm install jest --save-dev
+```
+
+### Struktur file:
+```
+learn-git/
+├── math.js           # file yang di-test
+├── math.test.js      # file test
+└── package.json
+```
+
+### `math.js`
+```javascript
+function tambah(a, b) {
+  return a + b;
+}
+
+function kurang(a, b) {
+  return a - b;
+}
+
+module.exports = { tambah, kurang };
+```
+
+### `math.test.js`
+```javascript
+const { tambah, kurang } = require('./math');
+
+test('tambah 2 + 3 harusnya 5', () => {
+  expect(tambah(2, 3)).toBe(5);
+});
+
+test('kurang 5 - 3 harusnya 2', () => {
+  expect(kurang(5, 3)).toBe(2);
+});
+```
+
+### `package.json` — bagian scripts:
+```json
+"scripts": {
+  "test": "jest"
+}
+```
+
+### Jalanin test di lokal:
+```bash
+npm test
+```
+
+### Contoh output sukses:
+```
+PASS ./math.test.js
+  ✓ tambah 2 + 3 harusnya 5 (3 ms)
+  ✓ kurang 5 - 3 harusnya 2 (1 ms)
+Tests: 2 passed, 2 total
+```
+
+### Contoh output gagal:
+```
+FAIL ./math.test.js
+  ✕ tambah 2 + 3 harusnya 5
+  Expected: 5
+  Received: -1
+```
+
+---
+
+## 2. Fix node_modules di gitignore
+
+> ⚠️ Wajib dilakuin setiap bikin project Node.js!
+
+### Tambahin ke `.gitignore`:
+```
+node_modules/
+```
+
+### Kalau `node_modules` udah terlanjur ke-add:
+```bash
+git rm -r --cached node_modules
+git add .
+git commit -m "hapus node_modules dari tracking"
+git push
+```
+
+---
+
+## 3. Deploy Otomatis ke GitHub Pages
+
+### Setup Permission GitHub Actions:
+1. Buka repo → **Settings**
+2. Klik **Actions** → **General**
+3. Scroll ke **Workflow permissions**
+4. Pilih **Read and write permissions**
+5. Klik **Save**
+
+### Aktifin GitHub Pages:
+1. Buka repo → **Settings**
+2. Klik **Pages**
+3. Di bagian **Branch**, pilih `gh-pages`
+4. Klik **Save**
+
+### URL website lo:
+```
+https://username.github.io/nama-repo
+```
+
+---
+
+## 4. Struktur Folder Public
+
+> Deploy hanya folder `public/` biar lebih rapi
+
+```
+learn-git/
+├── .github/
+│   └── workflows/
+│       └── belajar.yml
+├── public/
+│   └── index.html      ← yang di-deploy ke GitHub Pages
+├── math.js
+├── math.test.js
+├── package.json
+└── .gitignore
+```
+
+---
+
+## 5. Full CI/CD Pipeline
+
+### File `.github/workflows/belajar.yml`:
+```yaml
+name: Belajar Github Action
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Jalanin test
+        run: npm test
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: testing
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy ke GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+```
+
+### Penjelasan alur:
+
+```
+git push ke main
+      ↓
+Job: testing
+  ├── Checkout code
+  ├── Setup Node.js 18
+  ├── npm install
+  └── npm test
+        ↓ (kalau PASS)
+Job: deploy
+  ├── Checkout code
+  └── Deploy ./public → gh-pages
+        ↓
+Website live di GitHub Pages ✅
+```
+
+### Keyword penting:
+
+| Keyword | Fungsi |
+|---|---|
+| `needs: testing` | Job deploy baru jalan kalau testing sukses |
+| `actions/checkout@v3` | Clone repo ke runner |
+| `actions/setup-node@v3` | Install Node.js di runner |
+| `peaceiris/actions-gh-pages@v3` | Deploy ke GitHub Pages |
+| `publish_dir` | Folder yang di-deploy |
+| `GITHUB_TOKEN` | Token otomatis dari GitHub, gak perlu bikin manual |
+
+---
+
+## 6. Cheat Sheet GitHub Actions
+
+### Struktur dasar:
+```yaml
+name: Nama Workflow
+
+on:                          # trigger
+  push:
+    branches: [main]
+  pull_request:              # jalan saat ada PR
+  workflow_dispatch:         # bisa dijalanin manual
+  schedule:
+    - cron: '0 0 * * *'     # terjadwal (tiap tengah malam)
+
+jobs:
+  nama-job:
+    runs-on: ubuntu-latest   # OS runner
+    needs: job-lain          # tunggu job lain selesai dulu
+    env:                     # environment variable
+      NAMA: "nilai"
+      RAHASIA: ${{ secrets.NAMA_SECRET }}
+
+    steps:
+      - name: Nama Step
+        run: perintah bash   # jalanin perintah
+
+      - name: Pake Action
+        uses: owner/action@v3  # pake action dari marketplace
+        with:
+          parameter: nilai
+```
+
+### Perbandingan run vs uses:
+
+| | `run` | `uses` |
+|---|---|---|
+| **Fungsi** | Jalanin perintah bash | Pake Action buatan orang lain |
+| **Contoh** | `run: npm test` | `uses: actions/checkout@v3` |
+| **Kapan** | Perintah sederhana | Butuh logic yang kompleks |
+
+### Perbandingan Steps vs Jobs:
+
+| | Steps | Jobs |
+|---|---|---|
+| **Urutan** | Berurutan (sequential) | Bisa paralel |
+| **Scope** | Dalam 1 job | Level workflow |
+| **Gagal** | Stop job | Bisa di-skip pake `needs` |
+
+### Secrets vs Env:
+
+| | `env` | `secrets` |
+|---|---|---|
+| **Keamanan** | Keliatan di file | Tersembunyi, disensor di log |
+| **Gunakan untuk** | Config biasa | Password, API key, token |
+| **Cara set** | Langsung di YAML | Settings → Secrets → Actions |
+
+---
+
+## 💡 Tips Penting
+
+1. **Selalu `needs`** — kalau deploy, pastiin testing sukses dulu
+2. **Jangan simpen secret di `env`** — pake `secrets` buat data rahasia
+3. **`node_modules` wajib di `.gitignore`** — jangan pernah di-push
+4. **Cek tab Actions** — selalu pantau log kalau ada yang gagal
+5. **`workflow_dispatch`** — berguna buat testing workflow tanpa harus push
+
+---
+
+> 💪 **Lo udah punya CI/CD pipeline sendiri yang dipake di perusahaan tech beneran!**

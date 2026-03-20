@@ -1,0 +1,256 @@
+# 🚀 Belajar GitHub - Sesi 6: Git Bisect
+
+> Cara nyari commit yang nyebabin bug dengan metode binary search
+
+
+
+## 1. Apa itu Git Bisect
+
+**Git Bisect** = cara nyari commit yang nyebabin bug dengan metode **binary search**
+
+### Masalah yang diselesaiin:
+Bayangin lo punya 1000 commit dan tiba-tiba ada bug — lo gak tau bug nya muncul di commit yang mana. Kalau dicek satu-satu butuh waktu lama banget!
+
+Git Bisect bakal **otomatis nyempiting** pencariannya dengan binary search — jauh lebih efisien! 🔥
+
+### Perbandingan efisiensi:
+| Jumlah Commit | Cek Satu-satu | Git Bisect |
+|---|---|---|
+| 10 commit | 10 langkah | ~4 langkah |
+| 100 commit | 100 langkah | ~7 langkah |
+| 1000 commit | 1000 langkah | ~10 langkah |
+| 1.000.000 commit | 1.000.000 langkah | ~20 langkah |
+
+> 💡 Git Bisect pake **logaritma basis 2** — semakin banyak commit, semakin besar keuntungannya!
+
+---
+
+## 2. Cara Kerja Binary Search
+
+### Konsep:
+```
+Commit: A B C D E F G H I J
+        ↑               ↑
+      GOOD             BAD
+              ↑
+        Cek tengah dulu (F)
+        
+Kalau F = BAD  → bug ada di A-F, cari di sini
+Kalau F = GOOD → bug ada di F-J, cari di sini
+```
+
+### Visualisasi dengan 5 commit:
+```
+Commit: 1    2    3    4    5
+       GOOD            ?   BAD
+
+Step 1: Cek commit 3 (tengah)
+        → BAD → bug ada di commit 1-3
+
+Step 2: Cek commit 2 (tengah dari 1-3)
+        → GOOD → bug ada di commit 2-3
+
+Step 3: KETEMU! Bug masuk di commit 3 ✅
+```
+
+---
+
+## 3. Cara Pakai Git Bisect
+
+### Step 1 — Start bisect:
+```bash
+git bisect start
+```
+
+### Step 2 — Tandain commit sekarang sebagai BAD:
+```bash
+# Commit sekarang (HEAD) ada bug nya
+git bisect bad
+```
+
+### Step 3 — Tandain commit lama yang masih GOOD:
+```bash
+# Tandain commit hash yang belum ada bug nya
+git bisect good <commit-hash>
+```
+
+> Cari commit hash yang GOOD pake `git log --oneline`
+
+### Step 4 — Git otomatis checkout ke commit tengah:
+```
+Bisecting: 1 revision left to test after this (roughly 1 step)
+[487573b] commit 3
+```
+
+Cek apakah bug ada di commit ini, terus tandain:
+```bash
+git bisect bad    # kalau ada bug
+git bisect good   # kalau belum ada bug
+```
+
+### Step 5 — Ulangi sampai Git nemuin commit yang bikin bug:
+```
+487573b is the first bad commit
+commit 487573b
+Author: alth45
+Date: Thu Mar 19 2026
+
+    commit 3
+```
+
+### Step 6 — Selesai, keluar dari bisect:
+```bash
+git bisect reset
+```
+
+Otomatis balik ke HEAD (commit terbaru)!
+
+---
+
+## 4. Contoh Sesi Bisect
+
+### Setup — bikin beberapa commit:
+```bash
+echo "commit 1 - aman" >> README.md
+git add .
+git commit -m "commit 1" --no-verify
+
+echo "commit 2 - aman" >> README.md
+git add .
+git commit -m "commit 2" --no-verify
+
+echo "commit 3 - BUG MASUK SINI" >> README.md
+git add .
+git commit -m "commit 3" --no-verify
+
+echo "commit 4 - aman" >> README.md
+git add .
+git commit -m "commit 4" --no-verify
+
+echo "commit 5 - aman" >> README.md
+git add .
+git commit -m "commit 5" --no-verify
+```
+
+### Log:
+```
+bd1a3e4 commit 5
+c3a7c37 commit 4
+487573b commit 3
+6f6101b commit 2
+74795cf commit 1
+```
+
+### Sesi bisect lengkap:
+```bash
+# 1. Start
+git bisect start
+
+# 2. Tandain HEAD sebagai BAD
+git bisect bad
+
+# 3. Tandain commit 1 sebagai GOOD
+git bisect good 74795cf
+# → Git checkout ke commit 3 (tengah)
+# Bisecting: 1 revision left to test after this
+
+# 4. Cek commit 3 → ada bug → BAD
+git bisect bad
+# → Git checkout ke commit 2
+
+# 5. Cek commit 2 → belum ada bug → GOOD
+git bisect good
+# → KETEMU!
+# 487573b is the first bad commit → commit 3!
+
+# 6. Reset
+git bisect reset
+# → Balik ke main ✅
+```
+
+### Output saat bug ditemukan:
+```
+487573b16e885174fcab0c57a69fd87d72c1d7a6 is the first bad commit
+commit 487573b16e885174fcab0c57a69fd87d72c1d7a6
+Author: alth45 <alth45@users.noreply.github.com>
+Date:   Thu Mar 19 09:44:32 2026 +0700
+
+    commit 3
+
+README.md | Bin 333 -> 387 bytes
+1 file changed, 0 insertions(+), 0 deletions(-)
+```
+
+---
+
+## 5. Cheat Sheet Git Bisect
+
+```bash
+# Mulai bisect
+git bisect start
+
+# Tandain commit sekarang ada bug
+git bisect bad
+
+# Tandain commit lama yang belum ada bug
+git bisect good <commit-hash>
+
+# Tandain hasil cek commit yang di-checkout Git
+git bisect bad     # ada bug
+git bisect good    # belum ada bug
+
+# Lihat log bisect
+git bisect log
+
+# Reset, balik ke HEAD
+git bisect reset
+
+# Skip commit yang gak bisa dicek
+git bisect skip
+```
+
+### Alur lengkap:
+```
+Ada bug di project
+        ↓
+git bisect start
+        ↓
+git bisect bad          → tandain HEAD ada bug
+        ↓
+git bisect good <hash>  → tandain commit lama yang aman
+        ↓
+Git checkout ke commit tengah
+        ↓
+Cek apakah bug ada
+        ↓
+git bisect bad/good
+        ↓
+Ulangi sampai Git nemuin commit yang bikin bug
+        ↓
+"XYZ is the first bad commit" ✅
+        ↓
+git bisect reset        → balik ke HEAD
+        ↓
+Fix bug di commit yang ketemu! 🔥
+```
+
+---
+
+## 💡 Tips & Best Practices
+
+1. **Catat commit GOOD yang jelas** → sebelum bisect, pastiin lo tau commit mana yang terakhir masih aman
+2. **Gunakan git tag** → tag versi stable biar gampang nyari commit GOOD: `git bisect good v1.0.0`
+3. **Skip commit yang gak relevan** → kalau ada commit yang gak bisa dicek (misal build gagal), pake `git bisect skip`
+4. **Bisect bisa diotomasi** → kalau lo punya script buat ngecek bug, Git Bisect bisa jalan otomatis:
+```bash
+git bisect run npm test
+```
+5. **Reset kalau salah tandain** → kalau salah tandain good/bad, reset dan mulai lagi:
+```bash
+git bisect reset
+git bisect start
+```
+
+---
+
+> 💪 **Git Bisect adalah senjata rahasia developer buat debug — nemuin bug di ribuan commit dalam hitungan menit!**

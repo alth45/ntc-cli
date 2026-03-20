@@ -1,0 +1,439 @@
+# 🚀 Belajar GitHub - Sesi 5: Git Rebase
+
+> Cara gabungin branch dengan history yang lebih rapi dan bersih
+
+
+## 1. Apa itu Git Rebase
+
+**Git Rebase** = cara memindahkan commit dari satu branch ke branch lain, sehingga history jadi **lurus dan bersih**
+
+### Analogi:
+Bayangin lo nulis catatan di kertas terpisah, terus mau gabungin ke buku utama — rebase itu kayak lo **menyalin ulang** catatan lo di atas halaman terbaru buku utama, bukan nempel di halaman lama.
+
+### Cara kerjanya:
+```
+Sebelum rebase:
+main:          A → B → C
+                    ↘
+fitur-rebase:        D → E
+
+Setelah rebase:
+main:          A → B → C → D' → E'
+```
+
+> D' dan E' = commit yang sama tapi udah di-"rebase" di atas commit C
+
+---
+
+## 2. Merge vs Rebase
+
+### Merge:
+```
+main:    A → B → C ─────────────→ M (merge commit)
+                   ↘             ↗
+fitur:              D → E → F ──
+```
+- Bikin **merge commit** ekstra
+- History terlihat **bercabang**
+- Lebih **aman** untuk branch yang udah di-share ke tim
+
+### Rebase:
+```
+main:    A → B → C → D' → E' → F'
+```
+- **Tidak ada** merge commit ekstra
+- History terlihat **lurus dan bersih**
+- **Berbahaya** kalau dilakukan di branch yang udah di-push ke GitHub
+
+### Perbandingan lengkap:
+| | Merge | Rebase |
+|---|---|---|
+| **History** | Bercabang, ada merge commit | Lurus, bersih |
+| **Keamanan** | Aman untuk branch shared | Berbahaya untuk branch shared |
+| **Conflict** | Diselesaikan sekali | Diselesaikan per commit |
+| **Cocok untuk** | Branch yang udah di-push | Branch yang masih lokal |
+| **Transparansi** | Keliatan kapan merge terjadi | History terlihat linear |
+
+---
+
+## 3. Cara Pakai Git Rebase
+
+### Setup simulasi:
+```bash
+# 1. Bikin branch baru
+git checkout -b fitur-rebase
+
+# 2. Tambahin beberapa commit di branch
+echo "fitur 1" >> README.md
+git add .
+git commit -m "nambahin fitur 1"
+
+echo "fitur 2" >> README.md
+git add .
+git commit -m "nambahin fitur 2"
+
+# 3. Pindah ke main dan tambahin commit baru
+git checkout main
+echo "update di main" >> README.md
+git add .
+git commit -m "update penting di main"
+```
+
+### Kondisi sebelum rebase:
+```
+git log --oneline --all --graph
+
+* 6a101e5 (main) update penting di main
+| * 7ba0aee (fitur-rebase) nambahin fitur 2
+| * f5ba44b nambahin fitur 1
+|/
+```
+
+### Jalanin rebase:
+```bash
+# Pastiin lo di branch yang mau di-rebase
+git checkout fitur-rebase
+
+# Rebase ke main
+git rebase main
+```
+
+### Kondisi setelah rebase:
+```
+git log --oneline --all --graph
+
+* f786d6a (HEAD -> main, fitur-rebase) commit terbaru
+* 9d7196e nambahin fitur 1
+* 6a101e5 update penting di main
+```
+
+History jadi lurus tanpa merge commit! ✅
+
+### Kalau ada conflict saat rebase:
+```bash
+# 1. Resolve conflict di file yang bermasalah
+notepad README.md
+# hapus tanda <<<<<<, =======, >>>>>>>
+
+# 2. Add file yang udah di-resolve
+git add README.md
+
+# 3. Lanjutin rebase
+git rebase --continue
+# kalau muncul VIM → tekan Escape → ketik :wq → Enter
+
+# Kalau mau batalin rebase
+git rebase --abort
+```
+
+---
+
+## 4. Git Reflog
+
+> Catatan semua pergerakan HEAD — berguna banget buat recovery!
+
+**Git Reflog** = log semua aksi yang pernah dilakuin di repo lo, termasuk rebase, reset, checkout, dll
+
+### Kapan dipake?
+- Commit hilang setelah rebase
+- Salah `git reset --hard`
+- Mau balik ke kondisi sebelumnya
+
+### Cara pake:
+```bash
+git reflog
+```
+
+### Contoh output:
+```
+9d7196e (HEAD -> fitur-rebase) HEAD@{0}: rebase (finish): returning to refs/heads/fitur-rebase
+9d7196e (HEAD -> fitur-rebase) HEAD@{1}: rebase (continue): nambahin fitur 1
+6a101e5 (main) HEAD@{2}: rebase (start): checkout main
+7ba0aee HEAD@{3}: checkout: moving from main to fitur-rebase
+6a101e5 (main) HEAD@{4}: commit: update penting di main
+7ba0aee HEAD@{5}: commit: nambahin fitur 2
+f5ba44b HEAD@{6}: commit: nambahin fitur 1
+```
+
+### Recovery commit yang hilang:
+```bash
+# Lihat reflog dan cari commit yang hilang
+git reflog
+
+# Recover pake cherry-pick
+git cherry-pick <commit-hash>
+
+# Atau balik ke kondisi tertentu
+git reset --hard HEAD@{3}
+```
+
+> 💡 Reflog adalah **safety net** lo — hampir semua kesalahan Git bisa di-recover lewat reflog selama belum lewat 90 hari!
+
+---
+
+## 5. Git Cherry-pick
+
+> Ngambil commit spesifik dari branch lain tanpa harus merge semua
+
+**Cherry-pick** = milih commit tertentu dan apply ke branch sekarang
+
+### Kapan dipake?
+- Commit hilang setelah rebase
+- Mau ambil satu fitur spesifik dari branch lain tanpa merge semua
+- Hotfix yang perlu di-apply ke beberapa branch sekaligus
+
+### Cara pake:
+```bash
+# Ambil satu commit
+git cherry-pick <commit-hash>
+
+# Kalau ada conflict
+git add <file>
+git cherry-pick --continue
+
+# Batalin cherry-pick
+git cherry-pick --abort
+
+# Skip commit yang conflict
+git cherry-pick --skip
+```
+
+### Contoh kasus:
+```bash
+# Liat semua commit di semua branch
+git log --oneline --all
+
+# Ambil commit tertentu dari branch lain
+git cherry-pick 7ba0aee
+```
+
+---
+
+## 6. Bug yang Dihadapi & Cara Resolvenya
+
+### 🐛 Bug 1: Conflict berulang saat rebase
+
+**Masalah:**
+```
+CONFLICT (content): Merge conflict in README.md
+error: could not apply 7ba0aee... nambahin fitur 2
+```
+
+**Penyebab:**
+Rebase apply commit satu per satu — kalau ada beberapa commit yang edit file yang sama, conflict bisa muncul berkali-kali (satu kali per commit yang conflict)
+
+**Solusi:**
+```bash
+# Resolve conflict di setiap commit
+notepad README.md
+# hapus tanda conflict
+
+git add README.md
+git rebase --continue
+# ulangi sampai semua commit selesai di-rebase
+```
+
+> 💡 Ini normal! Rebase memang resolve conflict per commit, bukan sekaligus seperti merge
+
+---
+
+### 🐛 Bug 2: Muncul VIM saat rebase --continue
+
+**Masalah:**
+```
+# Please enter the commit message for your changes...
+~
+~
+~
+.git/COMMIT_EDITMSG [unix]
+```
+
+**Penyebab:**
+Git minta konfirmasi commit message setelah resolve conflict — membuka VIM sebagai default editor
+
+**Solusi:**
+```
+1. Tekan Escape
+2. Ketik :wq
+3. Tekan Enter
+```
+
+> 💡 `:wq` = write (save) and quit di VIM
+
+---
+
+### 🐛 Bug 3: Commit hilang setelah rebase
+
+**Masalah:**
+```
+git log --oneline --all --graph
+* 9d7196e (HEAD -> fitur-rebase) nambahin fitur 1
+* 6a101e5 (main) update penting di main
+# commit "nambahin fitur 2" hilang!
+```
+
+**Penyebab:**
+Waktu resolve conflict, isi dari commit kedua ikut ter-resolve masuk ke commit pertama — jadi commit kedua dianggap kosong dan di-skip
+
+**Solusi — recovery pake reflog + cherry-pick:**
+```bash
+# 1. Cek reflog buat liat semua commit
+git reflog
+
+# 2. Temuin hash commit yang hilang
+# contoh: 7ba0aee HEAD@{6}: commit: nambahin fitur 2
+
+# 3. Cherry-pick commit yang hilang
+git cherry-pick 7ba0aee
+
+# 4. Kalau cherry-pick juga conflict, resolve dan skip
+git add README.md
+git cherry-pick --continue
+# atau kalau isinya udah ada
+git cherry-pick --skip
+```
+
+---
+
+### 🐛 Bug 4: cherry-pick --continue hasilnya empty
+
+**Pesan:**
+```
+The previous cherry-pick is now empty, possibly due to conflict resolution.
+If you wish to commit it anyway, use:
+    git commit --allow-empty
+Otherwise, please use 'git cherry-pick --skip'
+```
+
+**Penyebab:**
+Isi commit yang di-cherry-pick udah ada di branch sekarang (ter-resolve waktu conflict sebelumnya)
+
+**Solusi:**
+```bash
+git cherry-pick --skip
+```
+
+> 💡 Ini bukan error — Git cuma kasih tau kontennya udah ada, tinggal skip aja
+
+---
+
+### 🐛 Bug 5: README.md jadi berantakan setelah banyak conflict
+
+**Masalah:**
+```
+README.md isinya jadi kacau karena banyak conflict yang di-resolve berkali-kali
+```
+
+**Penyebab:**
+Waktu resolve conflict berulang, kadang tanda conflict atau isi duplikat ikut tersimpan
+
+**Solusi:**
+```bash
+# Buka file dan rapiin manual
+notepad README.md
+# hapus semua yang gak perlu, rapiin isinya
+
+git add README.md
+git commit -m "fix README.md" --no-verify
+```
+
+---
+
+## 7. Kapan Pake Merge vs Rebase
+
+### Gunakan MERGE kalau:
+- Branch udah di-push ke GitHub dan dipake orang lain
+- Kerja di tim dan butuh history yang transparan
+- Mau keliatan kapan persis branch digabungin
+- Lo masih belajar (merge lebih aman dan mudah dipahami)
+
+### Gunakan REBASE kalau:
+- Branch masih lokal, belum di-push ke GitHub
+- Mau bikin history bersih sebelum bikin PR
+- Update branch lo dengan perubahan terbaru dari main
+- Solo project yang mau history nya rapi
+
+### Golden Rule Rebase:
+> ⚠️ **JANGAN rebase branch yang udah di-push ke GitHub dan dipake orang lain!**
+> Rebase menulis ulang history — kalau orang lain udah punya history lama, repo mereka bakal konflik parah!
+
+```
+Branch masih lokal    → ✅ Aman direbase
+Branch udah di-push   → ❌ Jangan direbase, pake merge aja
+```
+
+---
+
+## 8. Cheat Sheet Git Rebase
+
+```bash
+# Rebase branch sekarang ke main
+git rebase main
+
+# Lanjutin rebase setelah resolve conflict
+git rebase --continue
+
+# Batalin rebase, balik ke kondisi sebelumnya
+git rebase --abort
+
+# Skip commit yang conflict
+git rebase --skip
+
+# Cek semua history termasuk rebase, reset, dll
+git reflog
+
+# Cherry-pick commit tertentu
+git cherry-pick <commit-hash>
+
+# Lanjutin cherry-pick setelah resolve conflict
+git cherry-pick --continue
+
+# Batalin cherry-pick
+git cherry-pick --abort
+
+# Skip cherry-pick yang empty
+git cherry-pick --skip
+
+# Cek graph history semua branch
+git log --oneline --all --graph
+```
+
+### Alur rebase yang bener:
+```
+Kerja di branch lokal
+        ↓
+Main ada update baru
+        ↓
+git checkout fitur-branch
+        ↓
+git rebase main
+        ↓
+Resolve conflict (kalau ada) per commit
+        ↓
+git rebase --continue
+        ↓
+History jadi lurus ✅
+        ↓
+git checkout main
+git merge fitur-branch
+        ↓
+git push
+```
+
+---
+
+## 💡 Tips & Best Practices
+
+1. **Rebase sebelum PR** → bikin history bersih sebelum minta review ke tim
+2. **Jangan rebase branch shared** → golden rule yang wajib diikutin
+3. **Gunakan reflog sebagai safety net** → hampir semua kesalahan bisa di-recover
+4. **Resolve conflict dengan teliti** → conflict berulang di rebase butuh perhatian ekstra
+5. **Ganti default editor dari VIM** → kalau gak familiar sama VIM, ganti ke editor lain:
+```bash
+git config --global core.editor "notepad"
+```
+6. **Kombinasiin rebase + squash** → bikin history makin rapi dengan squash beberapa commit jadi satu (interactive rebase)
+
+---
+
+> 💪 **Git Rebase bikin history repo lo bersih dan profesional — skill yang wajib dikuasain developer senior!**

@@ -1,0 +1,357 @@
+# 🐧 Membangun Web Server dari Nol — Lubuntu 20.04
+
+> Apache • PHP 7.4 • MySQL • phpMyAdmin • Composer • Laravel 8  
+> Panduan lengkap + bug & fix yang ditemui di lapangan
+
+---
+
+## 📋 Spesifikasi Lingkungan
+
+| Komponen | Versi | Keterangan |
+|---|---|---|
+| OS | Lubuntu 20.04 LTS (Focal Fossa) | Berjalan di VirtualBox |
+| Apache | 2.4.x | Web server |
+| PHP | 7.4.3 | Bawaan Ubuntu 20.04 |
+| MySQL | 8.0.x | Database server |
+| phpMyAdmin | Latest apt | GUI database |
+| Composer | 2.x | Package manager PHP |
+| Laravel | 8.x | Kompatibel dengan PHP 7.4 |
+
+> ⚠️ Laravel 9/10/11 butuh PHP 8.2+. Karena repo PHP 8.x bermasalah di Ubuntu 20.04, digunakan **Laravel 8** yang kompatibel dengan PHP 7.4.
+
+---
+
+## 🚀 Step by Step
+
+### STEP 1 — Update Sistem
+
+```bash
+sudo apt update
+sudo apt upgrade -y
+sudo apt install -y curl wget unzip software-properties-common
+```
+
+---
+
+### STEP 2 — Install Apache2
+
+```bash
+sudo apt install -y apache2
+sudo systemctl start apache2
+sudo systemctl enable apache2
+sudo systemctl status apache2
+```
+
+**Test:** Buka browser → `http://localhost` → harus muncul halaman *Apache2 Ubuntu Default Page*
+
+**Lokasi penting:**
+
+| Path | Keterangan |
+|---|---|
+| `/var/www/html/` | Root folder web — taruh file PHP di sini |
+| `/etc/apache2/apache2.conf` | Konfigurasi utama Apache |
+| `/etc/apache2/sites-available/` | Konfigurasi Virtual Host |
+| `/var/log/apache2/error.log` | Log error |
+| `/var/log/apache2/access.log` | Log akses |
+
+---
+
+### STEP 3 — Install PHP 7.4
+
+```bash
+sudo apt install -y php libapache2-mod-php php-mysql php-mbstring \
+  php-curl php-gd php-xml php-zip php-bcmath php-intl php-tokenizer
+
+sudo a2enmod php7.4
+sudo systemctl restart apache2
+
+php --version
+```
+
+**Test PHP:**
+
+```bash
+sudo nano /var/www/html/test.php
+```
+
+```php
+<?php
+phpinfo();
+?>
+```
+
+Akses `http://localhost/test.php` → harus muncul halaman info PHP.
+
+> ⚠️ Hapus `test.php` setelah selesai testing!
+
+---
+
+### STEP 4 — Install MySQL
+
+```bash
+sudo apt install -y mysql-server
+sudo systemctl start mysql
+sudo systemctl enable mysql
+
+# Amankan instalasi
+sudo mysql_secure_installation
+```
+
+**Buat user dan database:**
+
+```sql
+-- Masuk MySQL
+sudo mysql
+
+-- Buat database
+CREATE DATABASE namadatabase;
+
+-- Buat user (format BENAR)
+CREATE USER 'hd'@'localhost' IDENTIFIED BY 'passwordkamu';
+
+-- Beri izin
+GRANT ALL PRIVILEGES ON namadatabase.* TO 'hd'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+> ⚠️ Perhatikan format user: `'hd'@'localhost'` bukan `'hd@localhost'` — lihat bagian Bug & Fix di bawah.
+
+---
+
+### STEP 5 — Install phpMyAdmin
+
+```bash
+sudo apt install -y phpmyadmin php-mbstring php-zip php-gd php-json php-curl
+sudo phpenmod mbstring
+sudo systemctl restart apache2
+```
+
+Saat install, saat dialog muncul:
+- **Web server:** pilih `apache2` (tekan SPACE lalu ENTER)
+- **Configure with dbconfig-common:** pilih `Yes`
+
+**Test:** Akses `http://localhost/phpmyadmin`
+
+**Jika 404 Not Found:**
+
+```bash
+sudo nano /etc/apache2/apache2.conf
+
+# Tambahkan di baris paling bawah:
+Include /etc/phpmyadmin/apache.conf
+
+sudo systemctl restart apache2
+```
+
+---
+
+### STEP 6 — Install Composer
+
+```bash
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+composer --version
+```
+
+---
+
+### STEP 7 — Install Laravel 8
+
+```bash
+cd /var/www/html
+
+# Buat project Laravel 8 (kompatibel PHP 7.4)
+sudo composer create-project laravel/laravel:^8.0 myapp
+
+# Set permission
+sudo chown -R $USER:www-data /var/www/html/myapp
+sudo chmod -R 775 /var/www/html/myapp/storage
+sudo chmod -R 775 /var/www/html/myapp/bootstrap/cache
+
+# Jalankan dev server
+cd /var/www/html/myapp
+php artisan serve
+```
+
+**Test:** Akses `http://localhost:8000` → harus muncul halaman welcome Laravel 8 ✅
+
+---
+
+## 🐛 Bug & Fix yang Ditemui
+
+### Bug 1 — PHP Blank Putih Tanpa Error
+
+**Gejala:** File PHP diakses di browser tapi tampil blank putih, tidak ada output, tidak ada pesan error.
+
+**Penyebab:** `display_errors` mati secara default + ada syntax error (kurang titik koma).
+
+**Fix:** Tambahkan di awal file PHP untuk debug:
+
+```php
+<?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+// kode selanjutnya...
+```
+
+Atau cek log error Apache:
+
+```bash
+sudo tail -20 /var/log/apache2/error.log
+```
+
+---
+
+### Bug 2 — MySQL Error 1045 Access Denied
+
+**Gejala:**
+```
+SQLSTATE[HY000] [1045] Access denied for user 'hd'@'localhost' (using password: YES)
+```
+
+**Penyebab:** User MySQL dibuat dengan format salah:
+```sql
+-- ❌ SALAH — ini jadi username literal "hd@localhost"
+CREATE USER 'hd@localhost' IDENTIFIED BY 'pass';
+
+-- ✅ BENAR — username "hd", host "localhost" terpisah
+CREATE USER 'hd'@'localhost' IDENTIFIED BY 'pass';
+```
+
+**Fix:**
+
+```sql
+sudo mysql
+
+-- Hapus user yang salah format
+DROP USER 'hd@localhost'@'%';
+
+-- Buat ulang dengan format benar
+CREATE USER 'hd'@'localhost' IDENTIFIED BY 'passwordkamu';
+GRANT ALL PRIVILEGES ON namadatabase.* TO 'hd'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+---
+
+### Bug 3 — Composer Gagal Download nesbot/carbon & laravel/framework
+
+**Gejala:** `composer create-project laravel/laravel myapp` berhenti dengan error failed to download.
+
+**Penyebab:** PHP 7.4.3 tidak kompatibel dengan Laravel 10/11 yang butuh PHP 8.2+.
+
+**Fix:** Gunakan Laravel 8 yang support PHP 7.4:
+
+```bash
+composer create-project laravel/laravel:^8.0 myapp
+```
+
+---
+
+### Bug 4 — Gagal Upgrade PHP ke 8.2 (Repo Ondrej Error 418)
+
+**Gejala:**
+```
+Err:1 https://packages.sury.org/php focal InRelease
+  418  I'm a teapot
+```
+
+**Penyebab:** Domain `packages.sury.org` tidak dapat diakses dari jaringan. Repo launchpad Ondrej masuk tapi tidak membawa package PHP 8.x untuk Ubuntu 20.04 focal.
+
+**Fix:** Skip upgrade PHP, gunakan Laravel 8 yang kompatibel dengan PHP 7.4 bawaan Ubuntu 20.04. Jika butuh Laravel versi lebih baru, pertimbangkan upgrade OS ke **Ubuntu 22.04 LTS** yang sudah punya PHP 8.1 di repo resminya.
+
+---
+
+### Bug 5 — Laravel Permission Denied (storage/logs)
+
+**Gejala:**
+```
+UnexpectedValueException: The stream or file 
+"/var/www/html/myapp/storage/logs/laravel.log" 
+could not be opened in append mode: Permission denied
+```
+
+**Penyebab:** Folder `storage` dan `bootstrap/cache` tidak punya permission yang cukup untuk ditulis web server.
+
+**Fix:**
+
+```bash
+sudo chown -R $USER:www-data /var/www/html/myapp
+sudo chmod -R 775 /var/www/html/myapp/storage
+sudo chmod -R 775 /var/www/html/myapp/bootstrap/cache
+```
+
+---
+
+## 📌 Cheatsheet
+
+### Service Management
+
+```bash
+# Apache
+sudo systemctl start|stop|restart|reload|status apache2
+
+# MySQL
+sudo systemctl start|stop|restart|status mysql
+
+# Urutan yang benar: MySQL dulu, baru Apache
+sudo systemctl start mysql && sudo systemctl start apache2
+```
+
+### Koneksi PHP ke MySQL
+
+```php
+<?php
+$host = 'localhost';
+$user = 'hd';           // username saja, tanpa @localhost
+$pass = 'passwordkamu'; // password user MySQL
+$db   = 'namadatabase'; // nama database yang dibuat
+
+$conn = new mysqli($host, $user, $pass, $db);
+
+if ($conn->connect_error) {
+    die('Gagal: ' . $conn->connect_error);
+}
+
+echo 'Koneksi berhasil!';
+?>
+```
+
+### Laravel Artisan
+
+```bash
+php artisan serve              # Jalankan dev server :8000
+php artisan migrate            # Jalankan migrasi database
+php artisan make:controller    # Buat controller baru
+php artisan make:model         # Buat model baru
+php artisan route:list         # Lihat semua route
+php artisan cache:clear        # Bersihkan cache
+php artisan key:generate       # Generate app key
+```
+
+### Folder Penting
+
+| Path | Keterangan |
+|---|---|
+| `/var/www/html/` | Root web — taruh project di sini |
+| `/etc/apache2/` | Konfigurasi Apache |
+| `/etc/php/7.4/apache2/php.ini` | Konfigurasi PHP |
+| `/var/log/apache2/` | Log error dan access Apache |
+| `/etc/mysql/` | Konfigurasi MySQL |
+| `/var/www/html/myapp/.env` | Konfigurasi Laravel (DB, APP_KEY, dll) |
+
+---
+
+## ➡️ Next Steps
+
+- [ ] **Koneksi Laravel ke MySQL** — edit file `.env`, isi `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`
+- [ ] **Virtual Host Apache** — akses project via domain lokal misal `myapp.test`
+- [ ] **Laravel MVC** — belajar Route, Controller, Model, View
+- [ ] **Laravel Eloquent ORM** — interaksi database via Model
+- [ ] **Upgrade ke Ubuntu 22.04** — jika butuh Laravel 9/10/11 dengan PHP 8.x
+
+---
+
+> Dibuat berdasarkan pengalaman langsung setup di Lubuntu 20.04 LTS di VirtualBox.

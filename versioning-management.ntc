@@ -1,0 +1,562 @@
+# 🚀 Belajar GitHub - Sesi 3: Versioning, Issues, Project Board & Notifikasi
+
+> Lanjutan sesi 2 — fokus ke versioning, project management, notifikasi otomatis, dan troubleshooting
+
+
+
+## 1. Branch Protection
+
+> Nyegah push langsung ke `main` tanpa lewat PR dulu
+
+### Kenapa perlu Branch Protection?
+Di dunia kerja tim, kalau semua orang bisa push langsung ke `main` tanpa review, resikonya:
+- Kode yang belum di-test bisa masuk production
+- Susah tracking siapa yang ngubah apa
+- Bisa ngerusak kode yang udah stable
+
+### Cara aktifin:
+1. Buka repo → **Settings**
+2. Di sidebar kiri cari **Code and automation** → **Rules** → **Rulesets**
+3. Klik **New ruleset** → **New branch ruleset**
+4. Isi:
+   - **Ruleset name** → `protect-main`
+   - **Enforcement status** → `Active`
+5. Di **Target branches** → klik **Add target** → **Include by pattern** → ketik `main`
+6. Centang ✅ **Require a pull request before merging**
+7. Pastiin **Bypass list kosong** biar berlaku ke semua orang
+8. Klik **Create**
+
+### Efeknya di tim:
+```
+Developer push langsung ke main → ❌ DITOLAK
+Developer bikin branch → PR → Review → Merge → ✅ DITERIMA
+```
+
+### Catatan penting:
+> ⚠️ Di repo **personal**, branch protection tidak sepenuhnya memblokir owner.
+> Branch protection paling efektif dipake di **organisasi/tim** karena owner tidak bisa bypass rules.
+> Di perusahaan nanti, lo sebagai developer biasa akan benar-benar diblokir oleh rules ini.
+
+---
+
+## 2. Git Tag & Release
+
+> Penanda versi resmi di history commit project lo
+
+### Kenapa perlu versioning?
+- Orang lain bisa download versi tertentu yang stable
+- Mudah tracking perubahan antar versi
+- Standar industri di semua project open source & perusahaan
+
+### Semantic Versioning (SemVer):
+```
+v MAJOR . MINOR . PATCH
+  │        │       └── Patch  → bugfix kecil, tidak ada fitur baru
+  │        └────────── Minor  → fitur baru, tidak merusak yang lama
+  └─────────────────── Major  → perubahan besar, bisa breaking change
+```
+
+### Contoh penerapan:
+```
+v1.0.0 → Rilis pertama
+v1.0.1 → Fix bug kecil
+v1.1.0 → Nambahin fitur baru
+v2.0.0 → Perombakan besar, ada breaking change
+```
+
+### Perintah Git Tag:
+```bash
+# Bikin tag di commit terbaru
+git tag v1.0.0
+
+# Bikin tag dengan pesan (annotated tag)
+git tag -a v1.0.0 -m "First stable release"
+
+# Cek semua tag yang ada
+git tag
+
+# Push satu tag ke GitHub
+git push origin v1.0.0
+
+# Push semua tag sekaligus
+git push origin --tags
+
+# Hapus tag di lokal
+git tag -d v1.0.0
+
+# Hapus tag di GitHub
+git push origin --delete v1.0.0
+```
+
+### Bikin Release di GitHub:
+1. Buka repo → klik **Releases** di sidebar kanan
+2. Klik tab **Tags**
+3. Klik tag yang mau dijadiin release
+4. Klik **Create release from tag**
+5. Isi **Release title** dan **Description**
+6. Klik **Publish release**
+
+### Template description release yang bagus:
+```markdown
+## ✨ What's New
+- Nambahin fungsi kali()
+- Nambahin fungsi bagi()
+
+## 🐛 Bug Fixes
+- Fix fungsi tambah() yang hasilnya salah
+
+## 📦 Dependencies
+- jest: 29.x
+```
+
+### Versioning yang dibuat di sesi ini:
+| Versi | Isi |
+|---|---|
+| `v1.0.0` | First Release — fungsi tambah & kurang |
+| `v1.1.0` | Nambahin fungsi kali() + test nya |
+
+---
+
+## 3. GitHub Issues
+
+> Sistem tracking bug, fitur request, dan diskusi di project lo
+
+### Kapan bikin Issue?
+- Nemu bug di project
+- Mau request fitur baru
+- Butuh diskusi tentang implementasi
+- Dokumentasi technical debt
+
+### Cara bikin Issue:
+1. Buka repo → klik tab **Issues**
+2. Klik **New issue**
+3. Isi **Title** yang jelas dan deskriptif
+4. Isi **Description** dengan detail
+5. Klik **Submit new issue**
+
+### Template description Issue yang bagus:
+```markdown
+## 🐛 Deskripsi Bug
+Fungsi tambah() menghasilkan nilai yang salah
+
+## 📋 Steps to Reproduce
+1. Import fungsi tambah() dari math.js
+2. Panggil tambah(2, 3)
+3. Hasil yang didapat: -1
+
+## ✅ Expected Behavior
+Hasil yang diharapkan: 5
+
+## 🔧 Environment
+- Node.js: v18.x
+- OS: Windows 11
+```
+
+### Auto close Issue via commit message:
+```bash
+# Satu issue
+git commit -m "fix fungsi tambah, closes #1"
+
+# Multiple issue sekaligus
+git commit -m "fix semua bug, closes #1, closes #2, closes #3"
+```
+
+### Keyword auto close yang valid:
+| Keyword | Contoh |
+|---|---|
+| `closes` | `closes #1` |
+| `fixes` | `fixes #1` |
+| `resolves` | `resolves #1` |
+
+> 💡 Issue otomatis ke-close setelah commit yang mengandung keyword di atas di-merge ke main!
+
+### Fitur tambahan Issue:
+- **Labels** → kategoriin issue (bug, enhancement, help wanted)
+- **Assignees** → assign issue ke developer tertentu
+- **Milestone** → kelompokin issue ke versi tertentu
+- **Projects** → tambahin ke project board
+
+---
+
+## 4. GitHub Project Board
+
+> Kanban board kayak Trello tapi terintegrasi langsung sama repo GitHub lo
+
+### Cara bikin Project Board:
+1. Buka repo → klik tab **Projects**
+2. Klik **New project**
+3. Pilih template **Board**
+4. Kasih nama → contoh: `Learn Git Project`
+5. Klik **Create project**
+
+### Struktur kolom default:
+```
+📋 Todo → 🔄 In Progress → ✅ Done
+```
+
+### Cara tambahin Issue ke board:
+1. Klik **+ Add item** di kolom `Todo`
+2. Ketik `#` untuk nyari issue dari repo lo
+3. Pilih issue yang mau ditambahin
+4. Issue otomatis masuk ke kolom `Todo`
+
+### Cara pindahin task:
+- **Manual** → drag & drop issue ke kolom yang sesuai
+- **Otomatis** → issue pindah ke `Done` kalau di-close via commit
+
+### Workflow tim yang ideal:
+```
+Bug ditemuin / fitur diminta
+        ↓
+Buat Issue → masuk kolom Todo
+        ↓
+Developer assign ke diri sendiri → drag ke In Progress
+        ↓
+Bikin branch baru → kerjain → push → PR
+        ↓
+PR di-merge → closes #issue → otomatis pindah ke Done ✅
+```
+
+### Manfaat Project Board:
+- Semua orang di tim bisa liat progress
+- Gampang tracking siapa ngerjain apa
+- Visualisasi beban kerja tiap developer
+- Terintegrasi sama Issues & PR
+
+---
+
+## 5. Discord Notifikasi
+
+> Kirim notif otomatis ke Discord kalau GitHub Actions gagal
+
+### Kenapa perlu notifikasi?
+- Tau langsung kalau ada yang broken tanpa harus cek GitHub terus
+- Tim bisa langsung respon kalau ada failure
+- Histori notif tersimpan di channel Discord
+
+### Step 1 — Setup Discord Webhook:
+1. Buka Discord → pilih server lo
+2. Pilih channel yang mau dipake (contoh: `#github-notif`)
+3. Klik kanan channel → **Edit Channel**
+4. Klik tab **Integrations**
+5. Klik **Webhooks** → **New Webhook**
+6. Kasih nama → `GitHub Actions Bot`
+7. Klik **Copy Webhook URL** — **jangan share URL ini ke siapapun!**
+
+### Step 2 — Simpen ke GitHub Secrets:
+1. Buka repo → **Settings**
+2. Klik **Secrets and variables** → **Actions**
+3. Klik **New repository secret**
+4. Isi:
+   - **Name** → `DISCORD_WEBHOOK`
+   - **Value** → paste URL webhook Discord
+5. Klik **Add secret**
+
+> ⚠️ Jangan pernah hardcode webhook URL langsung di file YAML! Selalu pake Secrets!
+
+### Step 3 — Tambah job notify di workflow:
+```yaml
+  notify:
+    runs-on: ubuntu-latest
+    needs: [testing, deploy]
+    if: failure()
+    steps:
+      - name: Kirim notif ke Discord
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ job.status }}
+          title: "GitHub Actions Gagal!"
+          description: "Ada yang error di repo learn-git!"
+          color: 0xff0000
+```
+
+### Penjelasan tiap bagian:
+| Bagian | Fungsi |
+|---|---|
+| `needs: [testing, deploy]` | Pantau job testing dan deploy |
+| `if: failure()` | Cuma jalan kalau ada job yang gagal |
+| `sarisia/actions-status-discord@v1` | Action buat kirim notif ke Discord |
+| `webhook` | URL webhook yang disimpen di Secrets |
+| `status: ${{ job.status }}` | Status job (success/failure) |
+| `color: 0xff0000` | Warna embed Discord (merah = error) |
+
+### Kondisi `if` yang bisa dipake:
+```yaml
+if: failure()    # jalan kalau ada yang gagal
+if: success()    # jalan kalau semua sukses
+if: always()     # selalu jalan apapun hasilnya
+if: cancelled()  # jalan kalau workflow di-cancel
+```
+
+### Contoh notif yang muncul di Discord:
+```
+❌ GitHub Actions Gagal!
+Ada yang error di repo learn-git!
+
+Repository  : alth45/learn-git
+Ref         : refs/heads/main
+Event       : push
+Commit      : bdba087 sengaja error buat test notif discord
+Triggered by: alth45
+Workflow    : Belajar Github Action
+```
+
+---
+
+## 6. Bug yang Dihadapi & Cara Resolvenya
+
+### 🐛 Bug 1: node_modules ikut ke-push
+
+**Masalah:**
+```
+node_modules/ ikut ke-add dan ke-push ke GitHub
+→ repo jadi berat, ribuan file gak perlu
+```
+
+**Penyebab:**
+Lupa tambahin `node_modules/` ke `.gitignore` sebelum `git add`
+
+**Solusi:**
+```bash
+# 1. Tambahin ke .gitignore
+echo "node_modules/" >> .gitignore
+
+# 2. Hapus node_modules dari Git tracking
+git rm -r --cached node_modules
+
+# 3. Commit dan push
+git add .
+git commit -m "hapus node_modules dari tracking"
+git push
+```
+
+> 💡 Selalu bikin `.gitignore` sebelum `npm install`!
+
+---
+
+### 🐛 Bug 2: Push ditolak - fetch first
+
+**Pesan error:**
+```
+! [rejected] main -> main (fetch first)
+error: failed to push some refs
+hint: Updates were rejected because the remote contains work
+hint: that you do not have locally.
+```
+
+**Penyebab:**
+Ada perubahan di GitHub yang belum ada di komputer lo — history nya gak sinkron
+
+**Solusi:**
+```bash
+git pull
+git push
+```
+
+---
+
+### 🐛 Bug 3: Push ditolak - non-fast-forward
+
+**Pesan error:**
+```
+! [rejected] main -> main (non-fast-forward)
+error: failed to push some refs
+hint: Updates were rejected because the tip of your
+hint: current branch is behind its remote counterpart.
+```
+
+**Penyebab:**
+Commit history lokal dan remote udah diverge — biasanya karena reset atau rebase
+
+**Solusi:**
+```bash
+# Pull dengan rebase
+git pull --rebase origin main
+git push
+
+# Kalau masih gagal, cek status dulu
+git log --oneline -5
+git status
+```
+
+---
+
+### 🐛 Bug 4: GitHub Actions error - package.json not found
+
+**Pesan error:**
+```
+npm error code ENOENT
+npm error path /home/runner/work/learn-git/learn-git/package.json
+npm error enoent Could not read package.json
+```
+
+**Penyebab:**
+Workflow belum ada step `actions/checkout@v3` — GitHub Actions gak punya akses ke file repo lo
+
+**Solusi:**
+Selalu tambahin `actions/checkout@v3` sebagai step pertama:
+```yaml
+steps:
+  - name: Checkout code
+    uses: actions/checkout@v3   # ← wajib ada!
+
+  - name: Install dependencies
+    run: npm install
+```
+
+---
+
+### 🐛 Bug 5: Deploy gagal - Permission denied (403)
+
+**Pesan error:**
+```
+remote: Permission to alth45/learn-git.git denied to github-actions[bot].
+fatal: unable to access: The requested URL returned error: 403
+```
+
+**Penyebab:**
+GitHub Actions belum dikasih izin buat write ke repo
+
+**Solusi:**
+1. Buka repo → **Settings**
+2. Klik **Actions** → **General**
+3. Scroll ke **Workflow permissions**
+4. Pilih **Read and write permissions**
+5. Klik **Save**
+6. Re-run workflow yang gagal
+
+---
+
+### 🐛 Bug 6: Website tidak berubah setelah push
+
+**Masalah:**
+Udah push `index.html` baru tapi tampilan di GitHub Pages gak berubah
+
+**Penyebab:**
+`publish_dir` di workflow ngarah ke root folder yang isinya campur sama file lain
+
+**Solusi:**
+```bash
+# 1. Bikin folder public
+mkdir public
+
+# 2. Pindahin index.html ke folder public
+move index.html public/index.html
+
+# 3. Update publish_dir di workflow
+```
+
+```yaml
+- name: Deploy ke GitHub Pages
+  uses: peaceiris/actions-gh-pages@v3
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    publish_dir: ./public    # ← arahkan ke folder public
+```
+
+---
+
+## 7. Full Workflow Profesional
+
+### File lengkap `.github/workflows/belajar.yml`:
+```yaml
+name: Belajar Github Action
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Jalanin test
+        run: npm test
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: testing
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy ke GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [testing, deploy]
+    if: failure()
+    steps:
+      - name: Kirim notif ke Discord
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ job.status }}
+          title: "GitHub Actions Gagal!"
+          description: "Ada yang error di repo learn-git!"
+          color: 0xff0000
+```
+
+### Visualisasi alur lengkap:
+```
+git push ke main
+        ↓
+┌─────────────────────┐
+│   Job: testing      │
+│  ├── checkout       │
+│  ├── setup node     │
+│  ├── npm install    │
+│  └── npm test       │
+└─────────────────────┘
+        ↓ PASS
+┌─────────────────────┐
+│   Job: deploy       │
+│  ├── checkout       │
+│  └── gh-pages       │──→ 🌐 Live di GitHub Pages
+└─────────────────────┘
+        ↓ GAGAL (salah satu job)
+┌─────────────────────┐
+│   Job: notify       │
+│  └── Discord notif  │──→ 📨 Notif masuk Discord
+└─────────────────────┘
+```
+
+### Secrets yang dipakai:
+| Secret | Fungsi |
+|---|---|
+| `GITHUB_TOKEN` | Token otomatis dari GitHub buat deploy |
+| `DISCORD_WEBHOOK` | URL webhook Discord buat notifikasi |
+
+---
+
+## 💡 Tips & Best Practices
+
+1. **Selalu `needs`** → kalau deploy, pastiin testing sukses dulu biar gak deploy kode yang broken
+2. **Jangan hardcode secrets** → selalu pake `${{ secrets.NAMA }}` bukan taruh langsung di YAML
+3. **`node_modules` wajib di `.gitignore`** → bikin `.gitignore` sebelum `npm install`
+4. **Selalu `checkout` dulu** → setiap job butuh `actions/checkout@v3` buat akses file repo
+5. **Pantau tab Actions** → selalu cek log kalau ada yang gagal, errornya biasanya jelas
+6. **Issue yang deskriptif** → makin detail issue lo, makin gampang orang lain fix nya
+7. **Tag setiap versi stable** → jangan nunggu project gede buat mulai versioning
+
+---
+
+> 💪 **Lo udah punya full setup CI/CD pipeline + project management yang dipake di perusahaan tech beneran!**
