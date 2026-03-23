@@ -1,9 +1,10 @@
 import { c } from '../utils/theme.js';
 import { SERVER_URL, getConfigAsync } from '../utils/config.js';
-import { askQuestion } from '../utils/prompt.js'; // Kita pakai buat konfirmasi (y/n)
+import { askQuestion } from '../utils/prompt.js';
 
 export async function deleteFile(slug) {
-    const config = getConfigAsync();
+    // ✅ FIX: tambah await
+    const config = await getConfigAsync();
     if (!config || !config.token) {
         console.log(`${c.red}❌ Error: Anda belum login. Gunakan perintah: ${c.yellow}ntc login${c.reset}`);
         process.exit(1);
@@ -15,12 +16,11 @@ export async function deleteFile(slug) {
         process.exit(1);
     }
 
-    // 1. Minta konfirmasi sebelum mengeksekusi (Safety First!)
     const confirm = await askQuestion(`${c.yellow}⚠️  YAKIN ingin menghapus artikel [${c.bright}${slug}${c.reset}${c.yellow}] secara permanen? (y/n): ${c.reset}`);
 
     if (confirm.toLowerCase() !== 'y') {
         console.log(`${c.gray}Operasi dibatalkan. File Anda aman.${c.reset}`);
-        return; // Berhenti di sini
+        return;
     }
 
     console.log(`${c.cyan}⏳ Menghancurkan artikel dari database...${c.reset}`);

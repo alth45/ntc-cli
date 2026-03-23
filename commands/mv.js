@@ -2,7 +2,8 @@ import { c } from '../utils/theme.js';
 import { SERVER_URL, getConfigAsync } from '../utils/config.js';
 
 export async function moveFile(slug, folderName) {
-    const config = getConfigAsync();
+    // ✅ FIX: tambah await
+    const config = await getConfigAsync();
     if (!config || !config.token) {
         console.log(`${c.red}❌ Error: Anda belum login.${c.reset}`); process.exit(1);
     }

@@ -2,7 +2,8 @@ import { c } from '../utils/theme.js';
 import { SERVER_URL, getConfigAsync } from '../utils/config.js';
 
 export async function showFiles() {
-    const config = getConfigAsync();
+    // ✅ FIX: tambah await
+    const config = await getConfigAsync();
     if (!config || !config.token) {
         console.log(`${c.red}❌ Error: Anda belum login. Gunakan perintah: ${c.yellow}ntc login${c.reset}`);
         process.exit(1);
@@ -42,7 +43,6 @@ export async function showFiles() {
                     const isLast = index === posts.length - 1;
                     const branch = isLast ? '└──' : '├──';
                     const indent = isLast ? '    ' : '│   ';
-                    const id = `${post.id}${c.blue}`;
                     const status = post.published ? `${c.green}[LIVE]${c.reset}` : `${c.yellow}[DRAF]${c.reset}`;
                     const date = new Date(post.updatedAt).toLocaleDateString('id-ID');
 

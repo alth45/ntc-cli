@@ -107,7 +107,7 @@ async function watchFile(filePath, config) {
         console.log(`${c.red}✗ gagal${c.reset}`);
     }
 
-    // Debounce — cegah push dobel kalau editor save berkali-kali dalam 1 detik
+    // Debounce
     let debounceTimer = null;
     let pushCount = 0;
     let lastContent = fs.readFileSync(fullPath, 'utf-8');
@@ -117,15 +117,13 @@ async function watchFile(filePath, config) {
     const watcher = fs.watch(fullPath, { persistent: true }, (eventType) => {
         if (eventType !== 'change') return;
 
-        // Debounce 300ms — editor seperti VS Code kadang trigger beberapa event sekaligus
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(async () => {
-            // Baca konten baru, skip kalau sama persis (beberapa editor save tanpa perubahan)
             let newContent;
             try {
                 newContent = fs.readFileSync(fullPath, 'utf-8');
             } catch {
-                return; // file sedang ditulis, skip cycle ini
+                return;
             }
 
             if (newContent === lastContent) return;
@@ -151,20 +149,19 @@ async function watchFile(filePath, config) {
         }, 300);
     });
 
-    // Handle Ctrl+C dengan bersih
     process.on('SIGINT', () => {
         watcher.close();
         console.log(`\n\n  ${c.cyan}Watch mode dihentikan.${c.reset} ${c.gray}Total push: ${pushCount}x${c.reset}\n`);
         process.exit(0);
     });
 
-    // Jaga process tetap hidup
     process.stdin.resume();
 }
 
 // ─── Public command ───────────────────────────────────────────────────────────
 export async function pushFile(filePath, flags = {}) {
-    const config = getConfigAsync();
+    // ✅ FIX: tambah await
+    const config = await getConfigAsync();
     if (!config || !config.token) {
         console.log(`${c.red}❌ Error: Belum login. Gunakan: ${c.yellow}ntc login${c.reset}`);
         process.exit(1);

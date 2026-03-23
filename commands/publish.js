@@ -3,7 +3,8 @@ import { SERVER_URL, getConfigAsync } from '../utils/config.js';
 import { askQuestion } from '../utils/prompt.js';
 
 export async function publishFile(slug) {
-    const config = getConfigAsync();
+    // ✅ FIX: tambah await
+    const config = await getConfigAsync();
     if (!config || !config.token) {
         console.log(`${c.red}❌ Error: Anda belum login. Gunakan perintah: ${c.yellow}ntc login${c.reset}`);
         process.exit(1);
@@ -15,7 +16,6 @@ export async function publishFile(slug) {
         process.exit(1);
     }
 
-    // Konfirmasi sebelum luncur ke publik
     const confirm = await askQuestion(`${c.yellow}🌐 YAKIN ingin mempublikasikan [${c.bright}${slug}${c.reset}${c.yellow}] ke seluruh dunia? (y/n): ${c.reset}`);
 
     if (confirm.toLowerCase() !== 'y') {
@@ -27,7 +27,7 @@ export async function publishFile(slug) {
 
     try {
         const response = await fetch(`${SERVER_URL}/api/ntc-publish?slug=${slug}`, {
-            method: 'PATCH', // Pakai PATCH karena kita cuma ngubah sebagian data (status published)
+            method: 'PATCH',
             headers: { 'Authorization': `Bearer ${config.token}` }
         });
 
@@ -35,8 +35,7 @@ export async function publishFile(slug) {
 
         if (response.ok) {
             console.log(`\n${c.green}${c.bright}🚀 [LIVE]${c.reset} ${c.green}Artikel '${slug}' resmi MENGUDARA!${c.reset}`);
-            // Sesuaikan "/read/" dengan rute URL baca di Next.js lu ya
-            console.log(`${c.cyan}🔗 Link Publik: ${c.gray}${SERVER_URL}/read/${result.slug}${c.reset}`);
+            console.log(`${c.cyan}🔗 Link Publik: ${c.gray}${SERVER_URL}/post/${result.slug}${c.reset}`);
         } else {
             console.log(`\n${c.yellow}⚠️  [INFO]${c.reset} ${c.yellow}${result.message}${c.reset}`);
         }

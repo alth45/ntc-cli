@@ -1,8 +1,6 @@
 import { c } from '../utils/theme.js';
 import { SERVER_URL, getConfigAsync } from '../utils/config.js';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function countWords(text) {
     if (!text) return 0;
     return text.trim().split(/\s+/).filter(Boolean).length;
@@ -37,24 +35,19 @@ function timeAgo(dateStr) {
     });
 }
 
-// ─── Bar chart ASCII ──────────────────────────────────────────────────────────
-
 function miniBar(value, max, width = 20) {
     const filled = max === 0 ? 0 : Math.round((value / max) * width);
     const empty = width - filled;
     return `${c.cyan}${'█'.repeat(filled)}${c.reset}${c.gray}${'░'.repeat(empty)}${c.reset}`;
 }
 
-// ─── Hitung streak nulis (hari berturut-turut ada activity) ──────────────────
-
 function calcStreak(posts) {
     if (posts.length === 0) return 0;
 
-    // Kumpulkan semua tanggal unik ada activity (push/update)
     const daySet = new Set(
         posts.map(p => new Date(p.updatedAt).toISOString().slice(0, 10))
     );
-    const days = [...daySet].sort().reverse(); // newest first
+    const days = [...daySet].sort().reverse();
 
     let streak = 0;
     let cursor = new Date();
@@ -72,8 +65,6 @@ function calcStreak(posts) {
     }
     return streak;
 }
-
-// ─── Activity heatmap 7 hari terakhir ─────────────────────────────────────────
 
 function buildWeekActivity(posts) {
     const days = Array.from({ length: 7 }, (_, i) => {
@@ -111,8 +102,6 @@ function renderHeatmap(weekData) {
     return { bar, labels };
 }
 
-// ─── Folder breakdown ─────────────────────────────────────────────────────────
-
 function buildFolderBreakdown(posts) {
     const map = {};
     posts.forEach(p => {
@@ -125,10 +114,9 @@ function buildFolderBreakdown(posts) {
     return Object.entries(map).sort((a, b) => b[1].total - a[1].total);
 }
 
-// ─── Public command ───────────────────────────────────────────────────────────
-
 export async function showStats() {
-    const config = getConfigAsync();
+    // ✅ FIX: tambah await
+    const config = await getConfigAsync();
     if (!config || !config.token) {
         console.log(`${c.red}❌ Belum login. Gunakan: ${c.yellow}ntc login${c.reset}`);
         process.exit(1);
@@ -149,7 +137,6 @@ export async function showStats() {
 
         const posts = data.posts ?? [];
 
-        // ── Hitung semua metrik ──────────────────────────────────────────
         const totalCatatan = posts.length;
         const totalLive = posts.filter(p => p.published).length;
         const totalDraf = totalCatatan - totalLive;
@@ -169,12 +156,10 @@ export async function showStats() {
 
         const { bar: heatBar, labels: heatLabels } = renderHeatmap(weekData);
 
-        // ── Render ───────────────────────────────────────────────────────
         console.log(`\n${c.cyan}${c.bright}  ╔══════════════════════════════════════╗${c.reset}`);
         console.log(`${c.cyan}${c.bright}  ║         NTC STATS — ${(config.username ?? 'user').padEnd(14)}   ║${c.reset}`);
         console.log(`${c.cyan}${c.bright}  ╚══════════════════════════════════════╝${c.reset}\n`);
 
-        // ── Summary cards ─────────────────────────────────────────────
         const row = (label, value, extra = '') =>
             `  ${c.gray}${label.padEnd(16)}${c.reset}${c.bright}${String(value).padStart(8)}${c.reset}  ${c.gray}${extra}${c.reset}`;
 
@@ -185,12 +170,10 @@ export async function showStats() {
         console.log(row('Total ukuran', formatSize(totalSize)));
         console.log(row('Streak nulis', `${streak} hari`, streak >= 3 ? '🔥' : ''));
 
-        // ── Activity heatmap 7 hari ────────────────────────────────────
         console.log(`\n  ${c.gray}Aktivitas 7 hari terakhir:${c.reset}`);
         console.log(`  ${heatBar}`);
         console.log(`  ${c.gray}${heatLabels}${c.reset}`);
 
-        // ── Bar chart: top folder ──────────────────────────────────────
         if (folderBreak.length > 0) {
             console.log(`\n  ${c.gray}Sebaran per folder:${c.reset}`);
             const maxCount = folderBreak[0][1].total;
@@ -207,7 +190,6 @@ export async function showStats() {
             }
         }
 
-        // ── Highlights ────────────────────────────────────────────────
         console.log(`\n  ${c.gray}──────────────────────────────────────${c.reset}`);
 
         if (lastUpdated) {
